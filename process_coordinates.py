@@ -32,38 +32,50 @@ def main():
 
     return data
 
-def calculate_speed(lat, long):
-    dist_covered = 0
-    time_taken = len(lat) / 3600
+def get_distance_elevation(route):
+
+    lat, long, ele = route
+
+    distance_covered = 0
+    elevation_gain = 0
+
     for i in range(len(lat) - 1):
-        dist_covered += distance.geodesic((lat[i], long[i]), (lat[i + 1], long[i + 1])).km
-
-    return dist_covered / time_taken
-
-def get_speed_estimates(routes):
-    indexes = [i for i in range(len(routes))]
-    speeds = [calculate_speed(lat, long) for lat, long in routes]
+        distance_covered += distance.geodesic((lat[i], long[i]), (lat[i + 1], long[i + 1])).km
+        elevation_gain += max(0, ele[i + 1] - ele[i])
     
-    return (indexes, speeds)
+    return (distance_covered, elevation_gain)
 
+def get_all_stats(routes):
 
-def find_coordinates(start, end, mid = (0, 0)):
+    distance_covered, elevation_gain = get_distance_elevation(routes[0])
+    
+    indexes = [i for i in range(len(routes))]
+    speeds = [distance_covered / (len(lat) / 3600) for lat,_,_ in routes]
+
+    ret_info = {
+        'distance_covered': distance_covered,
+        'elevation_gain': elevation_gain,
+        'speed_plot': (indexes, speeds)
+    }
+
+    return ret_info
+    
+def get_coordinates_info(start, end, mid = (0, 0)):
+
     routes = []
     for i in range(len(data)):
         coords, pair_of_coordinates = data[i]
         if start in pair_of_coordinates and end in pair_of_coordinates:
-            idx0 = pair_of_coordinates[start]
-            idx1 = pair_of_coordinates[end]
-            if (idx0 < idx1):
-                routes.append((coords['lat'].tolist()[idx0 : idx1], coords['long'].tolist()[idx0 : idx1]))
+            idx_start = pair_of_coordinates[start]
+            idx_end = pair_of_coordinates[end]
+            if (idx_start < idx_end):
+                routes.append((coords['lat'].tolist()[idx_start : idx_end], coords['long'].tolist()[idx_start : idx_end], coords['ele'].tolist()[idx_start : idx_end]))
         else:
             continue
-    return get_speed_estimates(routes)
 
-
+    return get_all_stats(routes)
 
 def fun():
     global data
-    return len(data)
 
 main()
