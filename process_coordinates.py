@@ -1,16 +1,17 @@
 import os
 import gpxpy
 import gpxpy.gpx
+import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from geopy import distance
+import matplotlib.pyplot as plt
 
 data = []
 
-def main():
+def main(path):
+
     global data
 
-    path = "./data/"
     files = os.listdir(path)
     
     for file in files:
@@ -59,23 +60,46 @@ def get_all_stats(routes):
     }
 
     return ret_info
+
+def check_uniqueness(routes):
+
+    dist_arr = np.array([get_distance_elevation(route)[0] for route in routes])
+    ele_arr = np.array([get_distance_elevation(route)[1] for route in routes])
+
+    dist_mean = sum(dist_arr) / len(dist_arr)
+    ele_mean = sum(ele_arr) / len(ele_arr)
+
+    dist_arr = dist_arr - [dist_mean]
+    ele_arr = ele_arr - [ele_mean]
+
+    for i in range(len(dist_arr)):
+        if (abs(dist_arr[i]) > 0.1 or abs(ele_arr[i]) > 1):
+            return False
     
+    return True
+
 def get_coordinates_info(start, end, mid = (0, 0)):
+
+    global data
 
     routes = []
     for i in range(len(data)):
         coords, pair_of_coordinates = data[i]
-        if start in pair_of_coordinates and end in pair_of_coordinates:
+        if start in pair_of_coordinates and end in pair_of_coordinates and (mid == (0, 0) or mid in pair_of_coordinates):
+            
             idx_start = pair_of_coordinates[start]
+            idx_mid = -1 if mid == (0, 0) else pair_of_coordinates[mid]
             idx_end = pair_of_coordinates[end]
-            if (idx_start < idx_end):
+            
+            if (idx_start < idx_end and (idx_mid == -1 or (idx_start < idx_mid and idx_mid < idx_end))):
                 routes.append((coords['lat'].tolist()[idx_start : idx_end], coords['long'].tolist()[idx_start : idx_end], coords['ele'].tolist()[idx_start : idx_end]))
         else:
             continue
+    
+    if not(check_uniqueness(routes)):
+        return False
 
     return get_all_stats(routes)
 
-def fun():
-    global data
-
-main()
+# array for distance, elevation-gain, speed for every day. (mean and stdev of each plot).
+# time = len(lat) seconds
