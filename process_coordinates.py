@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from geopy import distance
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 data = []
 
@@ -45,8 +46,8 @@ def get_distance_elevation(route):
         elevation_gain += max(0, ele[i + 1] - ele[i])
     
     return (distance_covered, elevation_gain)
-
 def get_all_stats(routes):
+
 
     distance_covered, elevation_gain = get_distance_elevation(routes[0])
     
@@ -100,6 +101,50 @@ def get_coordinates_info(start, end, mid = (0, 0)):
         return False
 
     return get_all_stats(routes)
+
+
+def get_attr_per_day():
+    '''
+    
+    Returns a tuple of dictionaries for distance vs day, elevation-gain vs day and speed vs day plots
+    
+    ''' 
+
+    dist_map, ele_map, speed_map = dict(), dict(), dict()
+    for i in range(len(data)):
+        time_series, ele_series, lat_series, long_series = data[i][0]['time'], data[i][0]['ele'], data[i][0]['lat'], data[i][0]['long'] 
+        for j in range(len(data[i][0])):
+            day = time_series[j].strftime("%x")
+            if day not in dist_map:
+                dist_map[day] = []
+            if day not in ele_map:
+                ele_map[day] = []
+            ele_map[day].append(ele_series[j])
+            dist_map[day].append((lat_series[j], long_series[j], time_series[j]))
+
+    for day, arr in ele_map.items():
+        ele_gain = 0
+        for i in range(len(arr) - 1):
+            ele_gain += max(0, arr[i + 1] - arr[i])
+        ele_map[day] = ele_gain
+    
+    FMT = "%H:%M:%S"
+    
+    for day, arr in dist_map.items():
+        total_dist = total_time = 0
+        for i in range(len(arr) - 1):
+            tmp_dist = distance.geodesic((arr[i][0], arr[i][1]), (arr[i + 1][0], arr[i + 1][1])).km
+            time_elapsed = datetime.strptime(arr[i + 1][2].strftime("%X"),FMT) - datetime.strptime(arr[i][2].strftime("%X"),FMT)
+            days, seconds = time_elapsed.days, time_elapsed.seconds
+            hours = days * 24 + seconds // 3600
+            minutes = (seconds % 3600) // 60
+            seconds = seconds % 60
+            total_dist += tmp_dist
+            total_time += (hours + minutes/60 + seconds/3600)
+        dist_map[day] = total_dist
+        speed_map[day] = total_dist/total_time
+    
+    return (dist_map, ele_map, speed_map)
 
 # array for distance, elevation-gain, speed for every day. (mean and stdev of each plot).
 # time = len(lat) seconds
