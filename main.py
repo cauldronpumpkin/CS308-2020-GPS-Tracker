@@ -15,10 +15,10 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog, messagebox
 
-####################
+
 fields = ('start_input_1', 'start_input_2', 'start_elevation', 'end_input_1', 'end_input_2','end_elevation')
 
-#$$$$$$$$$$$$$$$$$$$$$
+
 def pick_file(*args):
     path =  filedialog.askopenfilename(initialdir = "/",title = "Select file",filetypes = (("txt files","*.txt"),("all files","*.*")))
 
@@ -30,8 +30,6 @@ def pick_file(*args):
     else:
         return
 
-
-#$$$$$$$$$$$$$$$$$$$$$$
 
 def makeform(root, fields):
     entries = {}
