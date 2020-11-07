@@ -63,9 +63,9 @@ ttk.Label(mainframe, textvariable=filename).grid(
 ents = makeform(root, fields)
 dynamic_button = tk.Button(root, text="Pick Directory", command=pick_folder)
 dynamic_button.pack(side=tk.LEFT, padx=5, pady=5)
-b1 = tk.Button(root, text='Calculate', command=summarise)
+b1 = tk.Button(root, text='Show Overall Stats', command=summarise)
 b1.pack(side=tk.LEFT, padx=5, pady=5)
-b2 = tk.Button(root, text='Plot Data', command=plot)
+b2 = tk.Button(root, text='Pictoral Analysis', command=plot)
 b2.pack(side=tk.LEFT, padx=5, pady=5)
 root.mainloop()
 
