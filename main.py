@@ -1,32 +1,31 @@
-from process_coordinates import *
-main("./data/")
-print(get_coordinates_info((31.771511, 76.984304), (31.770879, 76.98317)))
-import os
-import gpxpy
-import gpxpy.gpx
-import numpy as np
-import pandas as pd
-from geopy import distance
-import matplotlib.pyplot as plt
-from datetime import datetime
-import string
-from tkinter import *
-import tkinter as tk
-from tkinter import ttk
 from tkinter import filedialog, messagebox
+from tkinter import ttk
+import tkinter as tk
+from tkinter import *
+import string
+from datetime import datetime
+import matplotlib.pyplot as plt
+from geopy import distance
+import pandas as pd
+import numpy as np
+import gpxpy.gpx
+import gpxpy
+import os
+from process_coordinates import *
 
 
-fields = ('start_input_1', 'start_input_2', 'start_elevation', 'end_input_1', 'end_input_2','end_elevation')
+fields = ('start_Lat', 'start_Long', 'mid_Lat', 'mid_Long',
+          'end_Lat', 'end_Long',)
 
 
-def pick_file(*args):
-    path =  filedialog.askopenfilename(initialdir = "/",title = "Select file",filetypes = (("txt files","*.txt"),("all files","*.*")))
+def pick_folder(*args):
+    path = filedialog.askdirectory(
+        initialdir="/", title="Select directory")
 
     if path != "":
         filepath.set(path)
         filename.set(path.split('/')[-1])
-        dynamic_button['text'] = "Coordinates"
-        #dynamic_button['command'] = refresh
+        main(path)
     else:
         return
 
@@ -34,7 +33,6 @@ def pick_file(*args):
 def makeform(root, fields):
     entries = {}
     for field in fields:
-        print(field)
         row = tk.Frame(root)
         lab = tk.Label(row, width=22, text=field+": ", anchor='w')
         ent = tk.Entry(row)
@@ -58,15 +56,17 @@ mainframe = ttk.Frame(root)
 filepath = StringVar()
 filename = StringVar()
 
-ttk.Label(mainframe, textvariable=filename).grid(column=1, row=1, sticky=(W, E))
+ttk.Label(mainframe, textvariable=filename).grid(
+    column=1, row=1, sticky=(W, E))
 
 
 ents = makeform(root, fields)
-dynamic_button = tk.Button(root, text="Pick File", command=pick_file)
+dynamic_button = tk.Button(root, text="Pick Directory", command=pick_folder)
 dynamic_button.pack(side=tk.LEFT, padx=5, pady=5)
-b1 = tk.Button(root, text='Calculate',
-           command=(lambda e=ents: calculate(e)))
+b1 = tk.Button(root, text='Calculate', command=summarise)
 b1.pack(side=tk.LEFT, padx=5, pady=5)
+b2 = tk.Button(root, text='Plot Data', command=plot)
+b2.pack(side=tk.LEFT, padx=5, pady=5)
 root.mainloop()
 
 # basic gui with buttons & input field & folder select // a
