@@ -7,7 +7,7 @@ import gpxpy.gpx
 import numpy as np
 import pandas as pd
 from geopy import distance
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from datetime import datetime
 import string
 from tkinter import *
