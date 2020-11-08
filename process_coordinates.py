@@ -132,6 +132,7 @@ def get_attr_per_day():
             'time'], data[i][0]['ele'], data[i][0]['lat'], data[i][0]['long']
         for j in range(len(data[i][0])):
             day = time_series[j].strftime("%x")
+            print(day)
             if day not in dist_map:
                 dist_map[day] = []
             if day not in ele_map:
@@ -205,7 +206,7 @@ def Filter_data(d):
     dval = []
     for key, val in d.items():
         dk.append(key)
-    dk.sort(key=lambda date: datetime.strptime(date, "%d/%m/%y"))
+    dk.sort(key=lambda date: datetime.strptime(date, "%m/%d/%y"))
     for i in dk:
         dval.append(d[i])
     return dk, dval
@@ -230,7 +231,6 @@ def plot():
     d_key, d_val = Filter_data(d)
     e_key, e_val = Filter_data(e)
     s_key, s_val = Filter_data(s)
-
     plot_window1 = Toplevel()
     plot_window1.geometry("1900x1000")
     plot_window1.title("Plot for Distance vs. Date")
