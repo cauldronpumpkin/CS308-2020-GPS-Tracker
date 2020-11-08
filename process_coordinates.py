@@ -7,6 +7,7 @@ from geopy import distance
 import matplotlib.pyplot as plt
 from datetime import datetime
 
+
 data = []
 
 def main(path):
@@ -132,6 +133,7 @@ def get_attr_per_day():
     
     for day, arr in dist_map.items():
         total_dist = total_time = 0
+        tmp_dist = tmp_time = 0
         for i in range(len(arr) - 1):
             tmp_dist = distance.geodesic((arr[i][0], arr[i][1]), (arr[i + 1][0], arr[i + 1][1])).km
             time_elapsed = datetime.strptime(arr[i + 1][2].strftime("%X"),FMT) - datetime.strptime(arr[i][2].strftime("%X"),FMT)
@@ -139,11 +141,16 @@ def get_attr_per_day():
             hours = days * 24 + seconds // 3600
             minutes = (seconds % 3600) // 60
             seconds = seconds % 60
+            tmp_time = hours + minutes/60 + seconds/3600
+            if(tmp_time < 0):
+                print("Error: Time is negative")
+                break
             total_dist += tmp_dist
-            total_time += (hours + minutes/60 + seconds/3600)
+            total_time += tmp_time
+        if(tmp_time < 0):
+            break
         dist_map[day] = total_dist
         speed_map[day] = total_dist/total_time
-    
     return (dist_map, ele_map, speed_map)
 
 # array for distance, elevation-gain, speed for every day. (mean and stdev of each plot).
