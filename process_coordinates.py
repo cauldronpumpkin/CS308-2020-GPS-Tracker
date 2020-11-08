@@ -6,6 +6,7 @@ from tkinter import *
 import string
 from matplotlib.figure import Figure
 import gpxpy
+import statistics 
 import gpxpy.gpx
 import numpy as np
 import pandas as pd
@@ -164,6 +165,49 @@ def get_attr_per_day():
         speed_map[day] = total_dist/total_time
 
     return (dist_map, ele_map, speed_map)
+
+#mean and variance of distance,speed and elevation
+
+def meanvalue(df):
+    sum1=0
+    for i in range(len(df)):
+        sum1=sum1+df[i]
+        
+    return (sum1/len(df))
+
+def varvalue(files):
+    sum2=0
+    average=meanvalue(files)
+    for i in range(len(files)):
+        sum2=sum2+(average-files[i])**2
+        
+    return (sum2/len(files))
+    
+
+dis,elev,speed=get_attr_per_day()
+dis_val=Filter_data(dis)
+speed_val=Filter_data(speed)
+elev_val=Filter_data(elev)
+
+dist_mean1=statistics.mean(dis_value)
+dist_mean2=meanvalue(dis_value)
+
+dist_var1=statistics.variance(dis_value)
+dist_var2=varvalue(dis_value)
+
+elev_mean1=statistics.mean(elev_val)
+elev_mean2=meanvalue(elev_val)
+
+elev_var1=statistics.variance(elev_val)
+elev_var2=varvalue(elev_val)
+
+speed_mean1=statistics.mean(speed_val)
+speed_mean2=meanvalue(speed_val)
+
+speed_var1=statistics.variance(speed_val) 
+speed_var2=varvalue(speed_val)
+     
+
 
 # Overall Summary of data (all days)
 
