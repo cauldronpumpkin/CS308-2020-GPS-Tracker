@@ -12,6 +12,7 @@ import pandas as pd
 from geopy import distance
 import matplotlib.pyplot as plt
 from datetime import datetime
+from dateutil import parser
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 
@@ -26,8 +27,13 @@ def main(path):
     files = os.listdir(path)
 
     for file in files:
+        name = str(file).split('.')[0]
         gpx_file = open(os.path.join(path, file), 'r')
-        gpx = gpxpy.parse(gpx_file)
+        
+        try:
+            gpx = gpxpy.parse(gpx_file)
+        except:
+            continue
 
         segment = gpx.tracks[0].segments[0]
         coords = pd.DataFrame([{
@@ -40,21 +46,21 @@ def main(path):
         for i, p in enumerate(segment.points):
             pair_of_coords[(p.latitude, p.longitude)] = i
 
-        data.append((coords, pair_of_coords))
+        data.append((coords, pair_of_coords, name))
 
     return data
 
 
 def get_distance_elevation(route):
 
-    lat, long, ele = route
+    lat, lon, ele, _ = route
 
     distance_covered = 0
     elevation_gain = 0
 
     for i in range(len(lat) - 1):
         distance_covered += distance.geodesic(
-            (lat[i], long[i]), (lat[i + 1], long[i + 1])).km
+            (lat[i], lon[i]), (lat[i + 1], lon[i + 1])).km
         elevation_gain += max(0, ele[i + 1] - ele[i])
 
     return (distance_covered, elevation_gain)
@@ -64,19 +70,22 @@ def get_all_stats(routes):
 
     distance_covered, elevation_gain = get_distance_elevation(routes[0])
 
-    indexes = [i for i in range(len(routes))]
-    speeds = [distance_covered / (len(lat) / 3600) for lat, _, _ in routes]
+    names = [name for _,_,_,name in routes]
+    speeds = [distance_covered / float(len(lat) / 3600) for lat,_,_,_ in routes]
 
     ret_info = {
         'distance_covered': distance_covered,
         'elevation_gain': elevation_gain,
-        'speed_plot': (indexes, speeds)
+        'speed_plot': (names, speeds)
     }
 
     return ret_info
 
 
 def check_uniqueness(routes):
+
+    if len(routes) == 0:
+        return 0
 
     dist_arr = np.array([get_distance_elevation(route)[0] for route in routes])
     ele_arr = np.array([get_distance_elevation(route)[1] for route in routes])
@@ -100,7 +109,7 @@ def get_coordinates_info(start, end, mid=(0, 0)):
 
     routes = []
     for i in range(len(data)):
-        coords, pair_of_coordinates = data[i]
+        coords, pair_of_coordinates, name = data[i]
         if start in pair_of_coordinates and end in pair_of_coordinates and (mid == (0, 0) or mid in pair_of_coordinates):
 
             idx_start = pair_of_coordinates[start]
@@ -109,7 +118,7 @@ def get_coordinates_info(start, end, mid=(0, 0)):
 
             if (idx_start < idx_end and (idx_mid == -1 or (idx_start < idx_mid and idx_mid < idx_end))):
                 routes.append((coords['lat'].tolist()[idx_start: idx_end], coords['long'].tolist()[
-                              idx_start: idx_end], coords['ele'].tolist()[idx_start: idx_end]))
+                              idx_start: idx_end], coords['ele'].tolist()[idx_start: idx_end], name))
         else:
             continue
 
@@ -132,14 +141,12 @@ def get_attr_per_day():
             'time'], data[i][0]['ele'], data[i][0]['lat'], data[i][0]['long']
         for j in range(len(data[i][0])):
             day = time_series[j].strftime("%x")
-            print(day)
             if day not in dist_map:
                 dist_map[day] = []
             if day not in ele_map:
                 ele_map[day] = []
             ele_map[day].append(ele_series[j])
-            dist_map[day].append(
-                (lat_series[j], long_series[j], time_series[j]))
+            dist_map[day].append((lat_series[j], long_series[j], time_series[j]))
 
     for day, arr in ele_map.items():
         ele_gain = 0
@@ -147,7 +154,7 @@ def get_attr_per_day():
             ele_gain += max(0, arr[i + 1] - arr[i])
         ele_map[day] = ele_gain
 
-    FMT = "%H:%M:%S"
+    FMT = "%m/%d/%Y, %H:%M:%S"
 
     for day, arr in dist_map.items():
         total_dist = total_time = 0
@@ -155,20 +162,13 @@ def get_attr_per_day():
         for i in range(len(arr) - 1):
             tmp_dist = distance.geodesic(
                 (arr[i][0], arr[i][1]), (arr[i + 1][0], arr[i + 1][1])).km
-            time_elapsed = datetime.strptime(
-                arr[i + 1][2].strftime("%X"), FMT) - datetime.strptime(arr[i][2].strftime("%X"), FMT)
+            time_elapsed = abs(datetime.strptime(arr[i + 1][2].strftime(FMT), FMT) - datetime.strptime(arr[i][2].strftime(FMT), FMT))
             days, seconds = time_elapsed.days, time_elapsed.seconds
             hours = days * 24 + seconds // 3600
             minutes = (seconds % 3600) // 60
             seconds = seconds % 60
-            tmp_time = hours + minutes/60 + seconds/3600
-            if(tmp_time < 0):
-                print("Error: Time is negative")
-                break
-            total_dist += tmp_dist
-            total_time += tmp_time
-        if(tmp_time < 0):
-            break
+            total_dist += abs(tmp_dist)
+            total_time += abs(hours + minutes/60 + seconds/3600)
         dist_map[day] = total_dist
         speed_map[day] = total_dist/total_time
 
@@ -176,9 +176,20 @@ def get_attr_per_day():
 
 # Overall Summary of data (all days)
 
+d = e = s = None
 
 def summarise():
-    d, e, s = get_attr_per_day()
+
+    global d, e, s
+
+    if len(data) == 0:
+        messagebox.showerror("Error", "Select GPX directory first.")
+        return 0
+
+    if (d == None):
+        messagebox.showinfo("Loading", "Please Close this and wait for 5-10 seconds")
+        d, e, s = get_attr_per_day()
+
     d_key, d_val = Filter_data(d)
     e_key, e_val = Filter_data(e)
     s_key, s_val = Filter_data(s)
@@ -227,7 +238,17 @@ def Route_stat(start, end):
 
 
 def plot():
-    d, e, s = get_attr_per_day()
+
+    global d, e, s
+
+    if len(data) == 0:
+        messagebox.showerror("Error", "Select GPX directory first.")
+        return 0
+
+    if (d == None):
+        messagebox.showinfo("Loading", "Please Close this and wait for 5-10 seconds")
+        d, e, s = get_attr_per_day()
+
     d_key, d_val = Filter_data(d)
     e_key, e_val = Filter_data(e)
     s_key, s_val = Filter_data(s)
@@ -286,3 +307,73 @@ def plot():
     plot_window1.mainloop()
     plot_window2.mainloop()
     plot_window3.mainloop()
+
+def isFloat(temp):
+    try :  
+        float(temp) 
+        return 1
+    except : 
+        return 0
+
+def process_coordinates_data(ents):
+
+    if len(data) == 0:
+        messagebox.showerror("Error", "Select GPX directory first.")
+        return 0
+
+    start = 0
+    mid = 0
+    end = 0
+
+    if isFloat(ents['start_Lat'].get()) and isFloat(ents['start_Long'].get()):
+        start = (float(ents['start_Lat'].get()), float(ents['start_Long'].get()))
+    if isFloat(ents['mid_Lat'].get()) and isFloat(ents['mid_Long'].get()):
+        mid = (float(ents['mid_Lat'].get()), float(ents['mid_Long'].get()))
+    if isFloat(ents['end_Lat'].get()) and isFloat(ents['end_Long'].get()):
+        end = (float(ents['end_Lat'].get()), float(ents['end_Long'].get()))
+
+    if (start == 0 or end == 0):
+        messagebox.showerror("Error", "Enter valid start and end coordinates.")  
+        return 0
+
+    info = get_coordinates_info(start, end, mid=(0, 0))
+
+    if info == 0:
+        messagebox.showerror("Error", "More than one path exists or no path.")  
+        return 0
+
+    plot_window = Toplevel()
+    plot_window.geometry("1000x1000")
+    plot_window.title("Statistics")
+
+    fig = Figure(figsize = (9, 9), dpi = 100) 
+
+    plot = fig.add_subplot(111)
+
+    plot.scatter(info['speed_plot'][0], info['speed_plot'][1])
+
+    plot.set_title("Speed throughout trips (in km/hr)")
+    
+    fig.tight_layout()
+  
+    canvas = FigureCanvasTkAgg(fig, master = plot_window)   
+    canvas.draw() 
+   
+    toolbar = NavigationToolbar2Tk(canvas, plot_window)
+    toolbar.update()
+
+    canvas.get_tk_widget().pack() 
+
+
+    summary_window = Toplevel()
+    summary_window.geometry("400x300")
+    mylist = Listbox(summary_window, width=20, height=10)
+    mylist.pack(padx=10, pady=10, fill="both", expand=True)
+
+    mylist.insert(END, "Distance Covered (in Km): {}".format(info['distance_covered']))
+    mylist.insert(END, "Elevation Gain (in feet): {}".format(info['elevation_gain']))
+    mylist.insert(END, "Mean Speed: {}".format(np.mean(info['speed_plot'][1])))
+    mylist.insert(END, "Standard Deviation of speed: {}".format(np.std(info['speed_plot'][1])))
+
+    plot_window.mainloop()
+    summary_window.mainloop()
