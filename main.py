@@ -16,9 +16,53 @@ import os
 from functools import partial
 from process_coordinates import *
 import time
+from PIL import Image
+
 
 fields = ('start_Lat', 'start_Long', 'mid_Lat', 'mid_Long',
           'end_Lat', 'end_Long',)
+
+
+
+def Process(rider_name):
+
+    global d,s,e
+
+    plot(rider_name)     
+
+    d = PhotoImage(file = r"./dist_plot.png")
+    s = PhotoImage(file = r"./speed_plot.png")
+    e = PhotoImage(file = r"./ele_plot.png")
+
+
+
+def call_primary_buttons():
+    global data
+
+    def process_data_button(event):
+        Process(rider_name.get())
+    
+    # def compare_data_button(event):
+
+
+    Label(top_left, text="Select the rider: ", font=fontStyle1).place(relx=0.27, rely=0.91)
+    rider_name = tk.StringVar()
+    rider_chosen = ttk.Combobox(top_left, width = 20, textvariable = rider_name)
+    rider_chosen['values'] = tuple(data.keys())
+    rider_chosen.place(relx=0.45,rely=0.91)
+    rider_chosen.bind('<<ComboboxSelected>>', process_data_button)
+
+    # compare = Label(top_right, text="Compare your Stats with others", font=fontStyle)
+    # compare.place(relx=0.22, rely=0.2)
+
+    # Label(top_right, text="Select rider to compare with: ", font=fontStyle1).place(relx=0.15, rely=0.30)
+    # other_rider_name = tk.StringVar()
+    # other_rider_chosen = ttk.Combobox(top_right, width = 20, textvariable = rider_name)
+    # other_rider_chosen['values'] = tuple(data.keys())
+    # other_rider_chosen.place(relx=0.42,rely=0.30)
+    # other_rider_chosen.bind('<<ComboboxSelected>>', compare_data_button)
+
+
 
 def pick_folder(*args):
 
@@ -26,11 +70,13 @@ def pick_folder(*args):
         initialdir="/", title="Select directory")
 
     if path != "":
+        print(path)
         file_txt.config(text=path)
         dynamic_button.config(bg='green')
         filepath.set(path)
         filename.set(path.split('/')[-1])
         main(path)
+        call_primary_buttons()
     else:
         return
 
@@ -63,21 +109,18 @@ def Cordinate_form(root):
     form_frame.place(relx=0.06, rely=0.2)
 
 
-def Route_Stats(parameter_list):
-    # When you press submit this function is triggered
-    #In this function fill all the stats in their respective labels
+def Route_Stats():
+#     # When you press submit this function is triggered
+#     #In this function fill all the stats in their respective labels
     
-    # Uncomment the following 
+#     # Uncomment the following 
     
-    # s1val.config(text="Value of stat")
-    # s2val.config(text="Value of stat")
-    # s3val.config(text="Value of stat")
-    # s4val.config(text="Value of stat")
-    # s5val.config(text="Value of stat")
-    pass
-
-def Process():
-    plot()     
+    s1val.config(text="Value of stat")
+    s2val.config(text="Value of stat")
+    s3val.config(text="Value of stat")
+    s4val.config(text="Value of stat")
+    s5val.config(text="Value of stat")
+    # pass
 
 
 root = tk.Tk()
@@ -110,14 +153,14 @@ canvas.place(relx=0.25, rely=0.15)
 img = PhotoImage(file="./logo.png")      
 canvas.create_image(20,25, anchor=NW, image=img)   
 
-button_txt = Label(top_left, text="Pick Directory for user:", font=fontStyle1)
-button_txt.place(relx=0.05, rely=0.83)
-dynamic_button = tk.Button(top_left, text="Pick Directory", command=pick_folder, bg='red')
-dynamic_button.place(relx=0.27, rely=0.82)
-process_button = tk.Button(top_left, text="Process Data", command=Process)
-process_button.place(relx=0.05, rely=0.89)
+
+Label(top_left, text="Pick Directory for user:", font=fontStyle1).place(relx=0.05, rely=0.83)
+
 file_txt = Label(top_left)
 file_txt.place(relx=0.45, rely=0.83)
+
+dynamic_button = tk.Button(top_left, text="Pick Directory", command=pick_folder, bg='red')
+dynamic_button.place(relx=0.27, rely=0.82)
 
 route_header = Label(btm_left, text="Route Specific Stats", font=fontStyle)
 route_header.place(relx=0.3)
@@ -141,15 +184,32 @@ stats_frame.place(relx=0.65, rely=0.21)
 submit_btn = tk.Button(btm_left, text="Submit", command=Route_Stats)
 submit_btn.place(relx=0.5,rely=0.3)
 
-d = PhotoImage(file = r"./dist_plot.png")
-s = PhotoImage(file = r"./speed_plot.png")
-e = PhotoImage(file = r"./ele_plot.png")
+try:
+    d = PhotoImage(file = r"./dist_plot.png")
+    s = PhotoImage(file = r"./speed_plot.png")
+    e = PhotoImage(file = r"./ele_plot.png")
+except:
+    im = Image.new('RGB', (580,484))
+    for img_name in ("dist_plot", "speed_plot", "ele_plot"):
+        im.save(img_name + ".png",format("PNG"))
+    d = PhotoImage(file = r"./dist_plot.png")
+    s = PhotoImage(file = r"./speed_plot.png")
+    e = PhotoImage(file = r"./ele_plot.png")
 l = Label(btm_right)
 l.place(relx=0, rely=0)
 
 
-compare = Label(top_right, text="Compare your Stats with others", font=fontStyle)
-compare.place(relx=0.22, rely=0.2)
+# compare = Label(top_right, text="Compare your Stats with others", font=fontStyle)
+# compare.place(relx=0.22, rely=0.2)
+
+# Label(top_right, text="Select rider to compare with: ", font=fontStyle1).place(relx=0.15, rely=0.30)
+# rider_name = tk.StringVar()
+# rider_chosen = ttk.Combobox(top_right, width = 20, textvariable = rider_name)
+# rider_chosen['values'] = tuple(data.keys())
+# rider_chosen.place(relx=0.42,rely=0.30)
+# rider_chosen.bind('<<ComboboxSelected>>', process_data_button)
+
+
 
 graphs = Label(top_right, text="Overall Statistics", font=fontStyle)
 graphs.place(relx=0.35)

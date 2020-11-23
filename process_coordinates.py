@@ -17,8 +17,7 @@ from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 
 
-data = []
-
+data = dict()
 
 def main(path):
 
@@ -26,28 +25,29 @@ def main(path):
 
     files = os.listdir(path)
 
-    for file in files:
-        name = str(file).split('.')[0]
-        gpx_file = open(os.path.join(path, file), 'r')
+    for dir in os.listdir(path):
+        data[dir] = []
+        for file in os.listdir(os.path.join(path, dir)):
+            name = str(file).split('.')[0]
+            gpx_file = open(os.path.join(os.path.join(path, dir), file), 'r')
 
-        try:
-            gpx = gpxpy.parse(gpx_file)
-        except:
-            continue
+            try:
+                gpx = gpxpy.parse(gpx_file)
+            except:
+                continue
 
-        segment = gpx.tracks[0].segments[0]
-        coords = pd.DataFrame([{
-            'lat': p.latitude,
-            'long': p.longitude,
-            'ele': p.elevation,
-            'time': p.time} for p in segment.points])
+            segment = gpx.tracks[0].segments[0]
+            coords = pd.DataFrame([{
+                'lat': p.latitude,
+                'long': p.longitude,
+                'ele': p.elevation,
+                'time': p.time} for p in segment.points])
 
-        pair_of_coords = {}
-        for i, p in enumerate(segment.points):
-            pair_of_coords[(p.latitude, p.longitude)] = i
+            pair_of_coords = {}
+            for i, p in enumerate(segment.points):
+                pair_of_coords[(p.latitude, p.longitude)] = i
 
-        data.append((coords, pair_of_coords, name))
-
+            data[dir].append((coords, pair_of_coords, name))
     return data
 
 
@@ -106,11 +106,19 @@ def check_uniqueness(routes):
 
 def get_coordinates_info(start, end, mid=(0, 0)):
 
-    global data
+    global data, rider
 
+    if len(data) == 0:
+        messagebox.showerror("Error", "Select GPX directory first.")
+        return
+
+    if(rider == ""):
+        messagebox.showerror("Error", "Select a rider first.")
+        return
+        
     routes = []
-    for i in range(len(data)):
-        coords, pair_of_coordinates, name = data[i]
+    for i in range(len(data[rider])):
+        coords, pair_of_coordinates, name = data[rider][i]
         if start in pair_of_coordinates and end in pair_of_coordinates and (mid == (0, 0) or mid in pair_of_coordinates):
 
             idx_start = pair_of_coordinates[start]
@@ -129,18 +137,19 @@ def get_coordinates_info(start, end, mid=(0, 0)):
     return get_all_stats(routes)
 
 
-def get_attr_per_day():
+def get_attr_per_day(rider_name):
     '''
 
     Returns a tuple of dictionaries for distance vs day, elevation-gain vs day and speed vs day plots
 
     '''
-
+    global data
+    
     dist_map, ele_map, speed_map = dict(), dict(), dict()
-    for i in range(len(data)):
-        time_series, ele_series, lat_series, long_series = data[i][0][
-            'time'], data[i][0]['ele'], data[i][0]['lat'], data[i][0]['long']
-        for j in range(len(data[i][0])):
+    for i in range(len(data[rider_name])):
+        time_series, ele_series, lat_series, long_series = data[rider_name][i][0][
+            'time'], data[rider_name][i][0]['ele'], data[rider_name][i][0]['lat'], data[rider_name][i][0]['long']
+        for j in range(len(data[rider_name][i][0])):
             day = time_series[j].strftime("%x")
             if day not in dist_map:
                 dist_map[day] = []
@@ -181,20 +190,24 @@ def get_attr_per_day():
 
 
 d = e = s = None
-
+rider = ""
 
 def summarise():
 
-    global d, e, s
+    global d, e, s, rider
 
     if len(data) == 0:
         messagebox.showerror("Error", "Select GPX directory first.")
-        return 0
+        return
+
+    if(rider == ""):
+        messagebox.showerror("Error", "Select a rider first.")
+        return
 
     if (d == None):
         messagebox.showinfo(
             "Loading", "Please Close this and wait for 5-10 seconds")
-        d, e, s = get_attr_per_day()
+        d, e, s = get_attr_per_day(rider)
 
     d_key, d_val = Filter_data(d)
     e_key, e_val = Filter_data(e)
@@ -242,83 +255,38 @@ def Route_stat(start, end):
 
 # All the plots related to data here, there are three seprate windows for each plot
 
-def plot():
-    global d, e, s
-
+def plot(rider_name):
+    global d, e, s, rider
+    if(rider == rider_name):
+        return
+    
     if len(data) == 0:
         messagebox.showerror("Error", "Select GPX directory first.")
-        return 0
+        return
 
-    if (d == None):
+    if len(data[rider_name]) == 0:
+        messagebox.showerror("Error", "No data found for " + rider_name)
+        return
+    
+    if (d == None or rider_name != rider):
         messagebox.showinfo(
             "Loading", "Please Close this and wait for 5-10 seconds")
-        d, e, s = get_attr_per_day()
+        d, e, s = get_attr_per_day(rider_name)
+        rider = rider_name
 
     d_key, d_val = Filter_data(d)
     e_key, e_val = Filter_data(e)
     s_key, s_val = Filter_data(s)
-<<<<<<< HEAD
-    plot_window1 = Toplevel()
-    plot_window1.geometry("1900x1000")
-    plot_window1.title("Plot for Distance vs. Date")
 
-    plot_window2 = Toplevel()
-    plot_window2.geometry("1900x1000")
-    plot_window2.title("Plot for Elevation vs. Date")
+    plt.clf()
 
-    plot_window3 = Toplevel()
-    plot_window3.geometry("1900x1000")
-    plot_window3.title("Plot for Speed vs. Date")
-
-    fig1 = Figure(figsize=(19, 10), dpi=100)
-
-    plot1 = fig1.add_subplot()
-    canvas1 = FigureCanvasTkAgg(fig1, master=plot_window1)
-    canvas1.get_tk_widget().pack()
-    toolbar1 = NavigationToolbar2Tk(canvas1, plot_window1)
-    toolbar1.update()
-    plot1.plot_date(d_key, d_val, xdate=True, linestyle='-')
-    plot1.set_xlabel("Date")
-    plot1.set_ylabel("Distance Covered (Km) ")
-    plot1.set_title("Distance vs. Date")
-    for tick in plot1.get_xticklabels():
-        tick.set_rotation(90)
-
-    fig2 = Figure(figsize=(19, 10), dpi=100)
-    plot2 = fig2.add_subplot()
-    canvas2 = FigureCanvasTkAgg(fig2, master=plot_window2)
-    canvas2.get_tk_widget().pack()
-    toolbar2 = NavigationToolbar2Tk(canvas2, plot_window2)
-    toolbar2.update()
-    plot2.plot_date(e_key, e_val, xdate=True, linestyle='-')
-    plot2.set_xlabel("Date")
-    plot2.set_ylabel("Elevation Gain (in feets)")
-    plot2.set_title("Elevation vs. Date")
-    for tick in plot2.get_xticklabels():
-        tick.set_rotation(90)
-
-    fig3 = Figure(figsize=(19, 10), dpi=100)
-
-    plot3 = fig3.add_subplot()
-    canvas3 = FigureCanvasTkAgg(fig3, master=plot_window3)
-    canvas3.get_tk_widget().pack()
-    toolbar3 = NavigationToolbar2Tk(canvas3, plot_window3)
-    toolbar3.update()
-    plot3.plot_date(s_key, s_val, xdate=True, linestyle='-')
-    plot3.set_xlabel("Date")
-    plot3.set_ylabel("Average Speed (Km/hr)")
-    plot3.set_title("Average Speed vs. Date")
-    for tick in plot3.get_xticklabels():
-        tick.set_rotation(90)
-    plot_window1.mainloop()
-    plot_window2.mainloop()
-    plot_window3.mainloop()
-=======
     plt.stem(d_key, d_val)
     plt.ylabel("Distance Covered (Km) ")
     plt.title("Distance vs. Date")
     plt.xticks(rotation='vertical')
     plt.savefig("dist_plot.png", bbox_inches='tight')
+
+    plt.clf()
 
     plt.stem(s_key, s_val)
     plt.ylabel("Average Speed (Km/hr) ")
@@ -326,87 +294,14 @@ def plot():
     plt.xticks(rotation='vertical')
     plt.savefig("speed_plot.png", bbox_inches='tight')
 
+    plt.clf()
+    
     plt.stem(e_key, e_val)
     plt.ylabel("Elevation Gain (feets) ")
     plt.title("Elevation vs. Date")
     plt.xticks(rotation='vertical')
     plt.savefig("ele_plot.png", bbox_inches='tight')
 
-# Not valid anymore, above is valid plot function
-# def plot():
-
-#     global d, e, s
-
-#     if len(data) == 0:
-#         messagebox.showerror("Error", "Select GPX directory first.")
-#         return 0
-
-#     if (d == None):
-#         messagebox.showinfo(
-#             "Loading", "Please Close this and wait for 5-10 seconds")
-#         d, e, s = get_attr_per_day()
-
-#     d_key, d_val = Filter_data(d)
-#     e_key, e_val = Filter_data(e)
-#     s_key, s_val = Filter_data(s)
-
-#     plot_window1 = Toplevel()
-#     plot_window1.geometry("700x500")
-#     plot_window1.title("Plot for Distance vs. Date")
-
-#     plot_window2 = Toplevel()
-#     plot_window2.geometry("700x500")
-#     plot_window2.title("Plot for Elevation vs. Date")
-
-#     plot_window3 = Toplevel()
-#     plot_window3.geometry("700x500")
-#     plot_window3.title("Plot for Speed vs. Date")
-
-#     fig1 = Figure(figsize=(19, 10), dpi=100)
-
-#     plot1 = fig1.add_subplot()
-#     canvas1 = FigureCanvasTkAgg(fig1, master=plot_window1)
-#     canvas1.get_tk_widget().pack()
-#     toolbar1 = NavigationToolbar2Tk(canvas1, plot_window1)
-#     toolbar1.update()
-#     plot1.plot_date(d_key, d_val, xdate=True, linestyle='-')
-#     plot1.set_xlabel("Date")
-#     plot1.set_ylabel("Distance Covered (Km) ")
-#     plot1.set_title("Distance vs. Date")
-#     for tick in plot1.get_xticklabels():
-#         tick.set_rotation(90)
-
-#     fig2 = Figure(figsize=(19, 10), dpi=100)
-#     plot2 = fig2.add_subplot()
-#     canvas2 = FigureCanvasTkAgg(fig2, master=plot_window2)
-#     canvas2.get_tk_widget().pack()
-#     toolbar2 = NavigationToolbar2Tk(canvas2, plot_window2)
-#     toolbar2.update()
-#     plot2.plot_date(e_key, e_val, xdate=True, linestyle='-')
-#     plot2.set_xlabel("Date")
-#     plot2.set_ylabel("Elevation Gain (in feets)")
-#     plot2.set_title("Elevation vs. Date")
-#     for tick in plot2.get_xticklabels():
-#         tick.set_rotation(90)
-
-#     fig3 = Figure(figsize=(19, 10), dpi=100)
-
-#     plot3 = fig3.add_subplot()
-#     canvas3 = FigureCanvasTkAgg(fig3, master=plot_window3)
-#     canvas3.get_tk_widget().pack()
-#     toolbar3 = NavigationToolbar2Tk(canvas3, plot_window3)
-#     toolbar3.update()
-#     plot3.plot_date(s_key, s_val, xdate=True, linestyle='-')
-#     plot3.set_xlabel("Date")
-#     plot3.set_ylabel("Average Speed (Km/hr)")
-#     plot3.set_title("Average Speed vs. Date")
-#     for tick in plot3.get_xticklabels():
-#         tick.set_rotation(90)
-#     plot_window1.mainloop()
-#     plot_window2.mainloop()
-#     plot_window3.mainloop()
-
->>>>>>> a43f1a46160fb408569b5d53b18ddf255573eb46
 
 def isFloat(temp):
     try:
@@ -416,7 +311,7 @@ def isFloat(temp):
         return 0
 
 
-def process_coordinates_data(ents):
+def process_coordinates_data(ents, rider_name):
 
     if len(data) == 0:
         messagebox.showerror("Error", "Select GPX directory first.")
@@ -424,7 +319,7 @@ def process_coordinates_data(ents):
 
     start = 0
     mid = 0
-    end = 0
+    end = 0 
 
     if isFloat(ents['start_Lat'].get()) and isFloat(ents['start_Long'].get()):
         start = (float(ents['start_Lat'].get()),
@@ -438,7 +333,7 @@ def process_coordinates_data(ents):
         messagebox.showerror("Error", "Enter valid start and end coordinates.")
         return 0
 
-    info = get_coordinates_info(start, end, mid=(0, 0))
+    info = get_coordinates_info(start, end, rider_name, mid=(0, 0))
 
     if info == 0:
         messagebox.showerror("Error", "More than one path exists or no path.")
