@@ -29,7 +29,7 @@ def main(path):
     for file in files:
         name = str(file).split('.')[0]
         gpx_file = open(os.path.join(path, file), 'r')
-        
+
         try:
             gpx = gpxpy.parse(gpx_file)
         except:
@@ -70,8 +70,9 @@ def get_all_stats(routes):
 
     distance_covered, elevation_gain = get_distance_elevation(routes[0])
 
-    names = [name for _,_,_,name in routes]
-    speeds = [distance_covered / float(len(lat) / 3600) for lat,_,_,_ in routes]
+    names = [name for _, _, _, name in routes]
+    speeds = [distance_covered / float(len(lat) / 3600)
+              for lat, _, _, _ in routes]
 
     ret_info = {
         'distance_covered': distance_covered,
@@ -146,7 +147,8 @@ def get_attr_per_day():
             if day not in ele_map:
                 ele_map[day] = []
             ele_map[day].append(ele_series[j])
-            dist_map[day].append((lat_series[j], long_series[j], time_series[j]))
+            dist_map[day].append(
+                (lat_series[j], long_series[j], time_series[j]))
 
     for day, arr in ele_map.items():
         ele_gain = 0
@@ -162,7 +164,8 @@ def get_attr_per_day():
         for i in range(len(arr) - 1):
             tmp_dist = distance.geodesic(
                 (arr[i][0], arr[i][1]), (arr[i + 1][0], arr[i + 1][1])).km
-            time_elapsed = abs(datetime.strptime(arr[i + 1][2].strftime(FMT), FMT) - datetime.strptime(arr[i][2].strftime(FMT), FMT))
+            time_elapsed = abs(datetime.strptime(
+                arr[i + 1][2].strftime(FMT), FMT) - datetime.strptime(arr[i][2].strftime(FMT), FMT))
             days, seconds = time_elapsed.days, time_elapsed.seconds
             hours = days * 24 + seconds // 3600
             minutes = (seconds % 3600) // 60
@@ -176,7 +179,9 @@ def get_attr_per_day():
 
 # Overall Summary of data (all days)
 
+
 d = e = s = None
+
 
 def summarise():
 
@@ -187,7 +192,8 @@ def summarise():
         return 0
 
     if (d == None):
-        messagebox.showinfo("Loading", "Please Close this and wait for 5-10 seconds")
+        messagebox.showinfo(
+            "Loading", "Please Close this and wait for 5-10 seconds")
         d, e, s = get_attr_per_day()
 
     d_key, d_val = Filter_data(d)
@@ -236,9 +242,7 @@ def Route_stat(start, end):
 
 # All the plots related to data here, there are three seprate windows for each plot
 
-
 def plot():
-
     global d, e, s
 
     if len(data) == 0:
@@ -246,12 +250,14 @@ def plot():
         return 0
 
     if (d == None):
-        messagebox.showinfo("Loading", "Please Close this and wait for 5-10 seconds")
+        messagebox.showinfo(
+            "Loading", "Please Close this and wait for 5-10 seconds")
         d, e, s = get_attr_per_day()
 
     d_key, d_val = Filter_data(d)
     e_key, e_val = Filter_data(e)
     s_key, s_val = Filter_data(s)
+<<<<<<< HEAD
     plot_window1 = Toplevel()
     plot_window1.geometry("1900x1000")
     plot_window1.title("Plot for Distance vs. Date")
@@ -307,13 +313,108 @@ def plot():
     plot_window1.mainloop()
     plot_window2.mainloop()
     plot_window3.mainloop()
+=======
+    plt.stem(d_key, d_val)
+    plt.ylabel("Distance Covered (Km) ")
+    plt.title("Distance vs. Date")
+    plt.xticks(rotation='vertical')
+    plt.savefig("dist_plot.png", bbox_inches='tight')
+
+    plt.stem(s_key, s_val)
+    plt.ylabel("Average Speed (Km/hr) ")
+    plt.title("Speed vs. Date")
+    plt.xticks(rotation='vertical')
+    plt.savefig("speed_plot.png", bbox_inches='tight')
+
+    plt.stem(e_key, e_val)
+    plt.ylabel("Elevation Gain (feets) ")
+    plt.title("Elevation vs. Date")
+    plt.xticks(rotation='vertical')
+    plt.savefig("ele_plot.png", bbox_inches='tight')
+
+# Not valid anymore, above is valid plot function
+# def plot():
+
+#     global d, e, s
+
+#     if len(data) == 0:
+#         messagebox.showerror("Error", "Select GPX directory first.")
+#         return 0
+
+#     if (d == None):
+#         messagebox.showinfo(
+#             "Loading", "Please Close this and wait for 5-10 seconds")
+#         d, e, s = get_attr_per_day()
+
+#     d_key, d_val = Filter_data(d)
+#     e_key, e_val = Filter_data(e)
+#     s_key, s_val = Filter_data(s)
+
+#     plot_window1 = Toplevel()
+#     plot_window1.geometry("700x500")
+#     plot_window1.title("Plot for Distance vs. Date")
+
+#     plot_window2 = Toplevel()
+#     plot_window2.geometry("700x500")
+#     plot_window2.title("Plot for Elevation vs. Date")
+
+#     plot_window3 = Toplevel()
+#     plot_window3.geometry("700x500")
+#     plot_window3.title("Plot for Speed vs. Date")
+
+#     fig1 = Figure(figsize=(19, 10), dpi=100)
+
+#     plot1 = fig1.add_subplot()
+#     canvas1 = FigureCanvasTkAgg(fig1, master=plot_window1)
+#     canvas1.get_tk_widget().pack()
+#     toolbar1 = NavigationToolbar2Tk(canvas1, plot_window1)
+#     toolbar1.update()
+#     plot1.plot_date(d_key, d_val, xdate=True, linestyle='-')
+#     plot1.set_xlabel("Date")
+#     plot1.set_ylabel("Distance Covered (Km) ")
+#     plot1.set_title("Distance vs. Date")
+#     for tick in plot1.get_xticklabels():
+#         tick.set_rotation(90)
+
+#     fig2 = Figure(figsize=(19, 10), dpi=100)
+#     plot2 = fig2.add_subplot()
+#     canvas2 = FigureCanvasTkAgg(fig2, master=plot_window2)
+#     canvas2.get_tk_widget().pack()
+#     toolbar2 = NavigationToolbar2Tk(canvas2, plot_window2)
+#     toolbar2.update()
+#     plot2.plot_date(e_key, e_val, xdate=True, linestyle='-')
+#     plot2.set_xlabel("Date")
+#     plot2.set_ylabel("Elevation Gain (in feets)")
+#     plot2.set_title("Elevation vs. Date")
+#     for tick in plot2.get_xticklabels():
+#         tick.set_rotation(90)
+
+#     fig3 = Figure(figsize=(19, 10), dpi=100)
+
+#     plot3 = fig3.add_subplot()
+#     canvas3 = FigureCanvasTkAgg(fig3, master=plot_window3)
+#     canvas3.get_tk_widget().pack()
+#     toolbar3 = NavigationToolbar2Tk(canvas3, plot_window3)
+#     toolbar3.update()
+#     plot3.plot_date(s_key, s_val, xdate=True, linestyle='-')
+#     plot3.set_xlabel("Date")
+#     plot3.set_ylabel("Average Speed (Km/hr)")
+#     plot3.set_title("Average Speed vs. Date")
+#     for tick in plot3.get_xticklabels():
+#         tick.set_rotation(90)
+#     plot_window1.mainloop()
+#     plot_window2.mainloop()
+#     plot_window3.mainloop()
+
+>>>>>>> a43f1a46160fb408569b5d53b18ddf255573eb46
 
 def isFloat(temp):
-    try :  
-        float(temp) 
+    try:
+        float(temp)
         return 1
-    except : 
+    except:
         return 0
+
 
 def process_coordinates_data(ents):
 
@@ -326,54 +427,57 @@ def process_coordinates_data(ents):
     end = 0
 
     if isFloat(ents['start_Lat'].get()) and isFloat(ents['start_Long'].get()):
-        start = (float(ents['start_Lat'].get()), float(ents['start_Long'].get()))
+        start = (float(ents['start_Lat'].get()),
+                 float(ents['start_Long'].get()))
     if isFloat(ents['mid_Lat'].get()) and isFloat(ents['mid_Long'].get()):
         mid = (float(ents['mid_Lat'].get()), float(ents['mid_Long'].get()))
     if isFloat(ents['end_Lat'].get()) and isFloat(ents['end_Long'].get()):
         end = (float(ents['end_Lat'].get()), float(ents['end_Long'].get()))
 
     if (start == 0 or end == 0):
-        messagebox.showerror("Error", "Enter valid start and end coordinates.")  
+        messagebox.showerror("Error", "Enter valid start and end coordinates.")
         return 0
 
     info = get_coordinates_info(start, end, mid=(0, 0))
 
     if info == 0:
-        messagebox.showerror("Error", "More than one path exists or no path.")  
+        messagebox.showerror("Error", "More than one path exists or no path.")
         return 0
 
     plot_window = Toplevel()
     plot_window.geometry("1000x1000")
     plot_window.title("Statistics")
 
-    fig = Figure(figsize = (9, 9), dpi = 100) 
+    fig = Figure(figsize=(9, 9), dpi=100)
 
     plot = fig.add_subplot(111)
 
     plot.scatter(info['speed_plot'][0], info['speed_plot'][1])
 
     plot.set_title("Speed throughout trips (in km/hr)")
-    
+
     fig.tight_layout()
-  
-    canvas = FigureCanvasTkAgg(fig, master = plot_window)   
-    canvas.draw() 
-   
+
+    canvas = FigureCanvasTkAgg(fig, master=plot_window)
+    canvas.draw()
+
     toolbar = NavigationToolbar2Tk(canvas, plot_window)
     toolbar.update()
 
-    canvas.get_tk_widget().pack() 
-
+    canvas.get_tk_widget().pack()
 
     summary_window = Toplevel()
     summary_window.geometry("400x300")
     mylist = Listbox(summary_window, width=20, height=10)
     mylist.pack(padx=10, pady=10, fill="both", expand=True)
 
-    mylist.insert(END, "Distance Covered (in Km): {}".format(info['distance_covered']))
-    mylist.insert(END, "Elevation Gain (in feet): {}".format(info['elevation_gain']))
+    mylist.insert(END, "Distance Covered (in Km): {}".format(
+        info['distance_covered']))
+    mylist.insert(END, "Elevation Gain (in feet): {}".format(
+        info['elevation_gain']))
     mylist.insert(END, "Mean Speed: {}".format(np.mean(info['speed_plot'][1])))
-    mylist.insert(END, "Standard Deviation of speed: {}".format(np.std(info['speed_plot'][1])))
+    mylist.insert(END, "Standard Deviation of speed: {}".format(
+        np.std(info['speed_plot'][1])))
 
     plot_window.mainloop()
     summary_window.mainloop()
