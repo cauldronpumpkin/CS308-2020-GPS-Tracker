@@ -26,13 +26,13 @@ fields = ('start_Lat', 'start_Long', 'mid_Lat', 'mid_Long',
 
 def Process(rider_name):
 
-    global d,s,e
+    global dist_img,speed_img,ele_img
 
     plot(rider_name)     
 
-    d = PhotoImage(file = r"./dist_plot.png")
-    s = PhotoImage(file = r"./speed_plot.png")
-    e = PhotoImage(file = r"./ele_plot.png")
+    dist_img = PhotoImage(file = r"./dist_plot.png")
+    speed_img= PhotoImage(file = r"./speed_plot.png")
+    ele_img = PhotoImage(file = r"./ele_plot.png")
 
 
 
@@ -41,9 +41,29 @@ def call_primary_buttons():
 
     def process_data_button(event):
         Process(rider_name.get())
+        try:
+            Label(top_right, text=rider_name.get() + " Statistics", font=fontStyle1).place(relx=0.20, rely=0.40)
+            lb = Listbox(top_right, width=40, height=7)
+            lb.place(relx=0.05, rely=0.45)
+            p1, p2, p3 = summarise(rider_name.get())
+            lb.insert(1, "Average distance covered per day (in Km): {}".format(p1))
+            lb.insert(2, "Average elevation gain per day (in feet): {}".format(p2))
+            lb.insert(3, "Max Speed reached (in Km/hr): {}".format(p3))
+        except:
+            print("{} has no data".format(rider_name.get()))
+        
     
-    # def compare_data_button(event):
-
+    def compare_data_button(event):
+        try:
+            Label(top_right, text=other_rider_name.get() + " Statistics", font=fontStyle1).place(relx=0.65, rely=0.40)
+            lb = Listbox(top_right, width=40, height=7)
+            lb.place(relx=0.50, rely=0.45)
+            p1, p2, p3 = summarise(other_rider_name.get())
+            lb.insert(1, "Average distance covered per day (in Km): {}".format(p1))
+            lb.insert(2, "Average elevation gain per day (in feet): {}".format(p2))
+            lb.insert(3, "Max Speed reached (in Km/hr): {}".format(p3))
+        except:
+            print("{} has no data".format(other_rider_name.get()))
 
     Label(top_left, text="Select the rider: ", font=fontStyle1).place(relx=0.27, rely=0.91)
     rider_name = tk.StringVar()
@@ -52,15 +72,15 @@ def call_primary_buttons():
     rider_chosen.place(relx=0.45,rely=0.91)
     rider_chosen.bind('<<ComboboxSelected>>', process_data_button)
 
-    # compare = Label(top_right, text="Compare your Stats with others", font=fontStyle)
-    # compare.place(relx=0.22, rely=0.2)
+    compare = Label(top_right, text="Compare your Stats with others", font=fontStyle)
+    compare.place(relx=0.22, rely=0.2)
 
-    # Label(top_right, text="Select rider to compare with: ", font=fontStyle1).place(relx=0.15, rely=0.30)
-    # other_rider_name = tk.StringVar()
-    # other_rider_chosen = ttk.Combobox(top_right, width = 20, textvariable = rider_name)
-    # other_rider_chosen['values'] = tuple(data.keys())
-    # other_rider_chosen.place(relx=0.42,rely=0.30)
-    # other_rider_chosen.bind('<<ComboboxSelected>>', compare_data_button)
+    Label(top_right, text="Select rider to compare with: ", font=fontStyle1).place(relx=0.15, rely=0.30)
+    other_rider_name = tk.StringVar()
+    other_rider_chosen = ttk.Combobox(top_right, width = 20, textvariable = other_rider_name)
+    other_rider_chosen['values'] = tuple(data.keys())
+    other_rider_chosen.place(relx=0.42,rely=0.30)
+    other_rider_chosen.bind('<<ComboboxSelected>>', compare_data_button)
 
 
 
@@ -80,17 +100,26 @@ def pick_folder(*args):
     else:
         return
 
+
 def dist_plot_window():
-    l.configure(image=d, width=735, height=485, bg='white')
+    global dist_img
+    l.configure(image=dist_img, width=735, height=485, bg='white')
 def speed_plot_window():
-    l.configure(image=s, width=735, height=485, bg='white')
+    global speed_img
+    l.configure(image=speed_img, width=735, height=485, bg='white')
 def ele_plot_window():
-    l.configure(image=e, width=735, height=485, bg='white')
+    global ele_img
+    l.configure(image=ele_img, width=735, height=485, bg='white')
 
 
 def Cordinate_form(root):
-    # This is just a form, figure out a way to get input from it
-    # Return a dict (ents) and pass it to Route Stats function
+    '''
+    
+    This is just a form, figure out a way to get input from it
+    Return a dict (ents) and pass it to Route Stats function
+    
+    '''
+    
     form_frame = Frame(root, width=200, height=300)
     a = Label(form_frame, text="Start Latitude").grid(row=0, column=0)
     b = Label(form_frame, text="Start Longitude").grid(row=1, column=0)
@@ -115,12 +144,17 @@ def Route_Stats():
     
 #     # Uncomment the following 
     
-    s1val.config(text="Value of stat")
-    s2val.config(text="Value of stat")
-    s3val.config(text="Value of stat")
-    s4val.config(text="Value of stat")
-    s5val.config(text="Value of stat")
-    # pass
+    # s1val.config(text="Value of stat")
+    # s2val.config(text="Value of stat")
+    # s3val.config(text="Value of stat")
+    # s4val.config(text="Value of stat")
+    # s5val.config(text="Value of stat")
+    pass
+
+
+
+
+
 
 
 root = tk.Tk()
@@ -128,7 +162,9 @@ root.geometry("1500x1000")
 root.title("GPS Route Analyser")
 filename = StringVar()
 filepath = StringVar()
+
 # create all of the main containers
+
 top_left = Frame(root, width=750, height=500, pady=3, highlightcolor='black',highlightthickness=4, highlightbackground='black')
 top_right = Frame(root, width=750, height=500, padx=3, pady=3, highlightcolor='black', highlightthickness=4, highlightbackground='black')
 btm_left = Frame(root, width=750, height=500, pady=3, highlightcolor='black', highlightthickness=4, highlightbackground='black')
@@ -156,16 +192,24 @@ canvas.create_image(20,25, anchor=NW, image=img)
 
 Label(top_left, text="Pick Directory for user:", font=fontStyle1).place(relx=0.05, rely=0.83)
 
+
 file_txt = Label(top_left)
 file_txt.place(relx=0.45, rely=0.83)
 
+
+
 dynamic_button = tk.Button(top_left, text="Pick Directory", command=pick_folder, bg='red')
 dynamic_button.place(relx=0.27, rely=0.82)
+
+
 
 route_header = Label(btm_left, text="Route Specific Stats", font=fontStyle)
 route_header.place(relx=0.3)
 route_txt = Label(btm_left, text="This section provides Route Specific statistics, Please enter the required co-ordinates:", font=fontStyle1)
 route_txt.place(relx=0.1, rely=0.1)
+
+
+
 Cordinate_form(btm_left)
 stats_frame = Frame(btm_left, width=200, height=300)
 s1 = Label(stats_frame, text="Route Distance: ").grid(row=0, column=0)
@@ -174,40 +218,39 @@ s3 = Label(stats_frame, text="Highest Elevation: ").grid(row=2, column=0)
 s4 = Label(stats_frame, text="Lowest Elevation: ").grid(row=3, column=0)
 s5 = Label(stats_frame, text="Time Taken: ").grid(row=4, column=0)
 
+
+
 s1val = Label(stats_frame).grid(row=0, column=1)
 s2val = Label(stats_frame).grid(row=1, column=1)
 s3val = Label(stats_frame).grid(row=2, column=1)
 s4val = Label(stats_frame).grid(row=3, column=1)
 s5val = Label(stats_frame).grid(row=4, column=1)
 
+
+
+
 stats_frame.place(relx=0.65, rely=0.21)
 submit_btn = tk.Button(btm_left, text="Submit", command=Route_Stats)
 submit_btn.place(relx=0.5,rely=0.3)
 
+
+
+
 try:
-    d = PhotoImage(file = r"./dist_plot.png")
-    s = PhotoImage(file = r"./speed_plot.png")
-    e = PhotoImage(file = r"./ele_plot.png")
+    dist_img = PhotoImage(file = r"./dist_plot.png")
+    speed_img = PhotoImage(file = r"./speed_plot.png")
+    ele_img = PhotoImage(file = r"./ele_plot.png")
 except:
     im = Image.new('RGB', (580,484))
     for img_name in ("dist_plot", "speed_plot", "ele_plot"):
         im.save(img_name + ".png",format("PNG"))
-    d = PhotoImage(file = r"./dist_plot.png")
-    s = PhotoImage(file = r"./speed_plot.png")
-    e = PhotoImage(file = r"./ele_plot.png")
+    dist_img = PhotoImage(file = r"./dist_plot.png")
+    speed_img = PhotoImage(file = r"./speed_plot.png")
+    ele_img = PhotoImage(file = r"./ele_plot.png")
+
+
 l = Label(btm_right)
 l.place(relx=0, rely=0)
-
-
-# compare = Label(top_right, text="Compare your Stats with others", font=fontStyle)
-# compare.place(relx=0.22, rely=0.2)
-
-# Label(top_right, text="Select rider to compare with: ", font=fontStyle1).place(relx=0.15, rely=0.30)
-# rider_name = tk.StringVar()
-# rider_chosen = ttk.Combobox(top_right, width = 20, textvariable = rider_name)
-# rider_chosen['values'] = tuple(data.keys())
-# rider_chosen.place(relx=0.42,rely=0.30)
-# rider_chosen.bind('<<ComboboxSelected>>', process_data_button)
 
 
 

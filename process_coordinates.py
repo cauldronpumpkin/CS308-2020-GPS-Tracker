@@ -18,6 +18,11 @@ from matplotlib.backends.backend_tkagg import (
 
 
 data = dict()
+d = e = s = None
+rider = ""
+
+
+
 
 def main(path):
 
@@ -186,52 +191,46 @@ def get_attr_per_day(rider_name):
 
     return (dist_map, ele_map, speed_map)
 
-# Overall Summary of data (all days)
 
 
-d = e = s = None
-rider = ""
 
-def summarise():
+def summarise(rider_name):
+    '''
+    
+    Overall Summary of data (all days)
 
-    global d, e, s, rider
+    '''
 
-    if len(data) == 0:
-        messagebox.showerror("Error", "Select GPX directory first.")
-        return
+    global d,e,s,rider
 
     if(rider == ""):
-        messagebox.showerror("Error", "Select a rider first.")
+        messagebox.showerror("Error", "Please select the primary rider first!")
         return
 
-    if (d == None):
-        messagebox.showinfo(
-            "Loading", "Please Close this and wait for 5-10 seconds")
-        d, e, s = get_attr_per_day(rider)
+    if len(data[rider_name]) == 0:
+        messagebox.showerror("Error", "No data found for " + rider_name)
+        return
 
-    d_key, d_val = Filter_data(d)
-    e_key, e_val = Filter_data(e)
-    s_key, s_val = Filter_data(s)
-    window = Toplevel()
-    window.geometry("500x300")
-    window.title("Overall Stats ")
 
-    mylist = Listbox(window, width=20, height=10)
-    mylist.pack(padx=10, pady=10, fill="both", expand=True)
+    if(rider_name == rider):
+        if(d == None):
+            d, e, s = get_attr_per_day(rider_name)
+        return (round(np.mean(tuple(d.values())), 2), round(np.mean(tuple(e.values())), 2), round(max(tuple(s.values())), 2))
+    else:
+        messagebox.showinfo("Loading", "Please Close this and wait for 5-10 seconds")
+        d1, e1, s1 = get_attr_per_day(rider_name)
+    
+        return (round(np.mean(tuple(d1.values())), 2), round(np.mean(tuple(e1.values())), 2), round(max(tuple(s1.values())), 2))
 
-    mylist.insert(
-        END, "Average distance covered per day (in Km): {}".format(round(np.mean(d_val), 2)))
-    mylist.insert(
-        END, "Average elevation gain per day (in feet): {}".format(round(np.mean(e_val), 2)))
-    mylist.insert(
-        END, "Max Speed reached (in Km/hr): {}".format(round(max(s_val), 2)))
-
-    window.mainloop()
-
-# Converts dict to list with key and value seprate, sorts dates also
 
 
 def Filter_data(d):
+    '''
+
+    Converts dict to list with key and value seprate, sorts dates also
+
+    '''
+
     dk = []
     dval = []
     for key, val in d.items():
@@ -241,10 +240,15 @@ def Filter_data(d):
         dval.append(d[i])
     return dk, dval
 
-# For a particluar root stat, link it with gui as suitable
+
 
 
 def Route_stat(start, end):
+    '''
+    
+    For a particluar root stat, link it with gui as suitable
+
+    '''
     stats = get_coordinates_info(start, end)
     if stats != False:
         print("Distance Covered: ", stats['distance_covered'])
@@ -253,10 +257,18 @@ def Route_stat(start, end):
     else:
         print("Multiple routes possible, please specify")
 
-# All the plots related to data here, there are three seprate windows for each plot
+
 
 def plot(rider_name):
+    '''
+
+    All the plots related to data here, there are three seprate windows for each plot
+
+    '''
+
+
     global d, e, s, rider
+
     if(rider == rider_name):
         return
     
