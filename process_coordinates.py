@@ -32,8 +32,12 @@ def main(path):
 
     for dir in os.listdir(path):
         data[dir] = []
+        d = {}
+        d2 = {}
+        ii = 0
         for file in os.listdir(os.path.join(path, dir)):
             name = str(file).split('.')[0]
+            # d[name] = []
             gpx_file = open(os.path.join(os.path.join(path, dir), file), 'r')
 
             try:
@@ -50,8 +54,16 @@ def main(path):
 
             pair_of_coords = {}
             for i, p in enumerate(segment.points):
-                pair_of_coords[(p.latitude, p.longitude)] = i
+                if ii == 0:
+                    d[(round(p.latitude, 5), round(p.longitude, 5))] = 1
+                elif ii == 1:
+                    if (round(p.latitude, 5), round(p.longitude, 5)) in d:
+                        d2[(round(p.latitude, 5), round(p.longitude, 5))] = 1
+                pair_of_coords[(round(p.latitude, 5), round(p.longitude, 5))] = i
 
+            if ii == 1:
+                print(min(d2.keys()), max(d2.keys()))
+            ii += 1
             data[dir].append((coords, pair_of_coords, name))
     return data
 
@@ -68,12 +80,12 @@ def get_distance_elevation(route):
             (lat[i], lon[i]), (lat[i + 1], lon[i + 1])).km
         elevation_gain += max(0, ele[i + 1] - ele[i])
 
-    return (distance_covered, elevation_gain)
+    return (distance_covered, elevation_gain, len(lat) / 60)
 
 
 def get_all_stats(routes):
 
-    distance_covered, elevation_gain = get_distance_elevation(routes[0])
+    distance_covered, elevation_gain, time_taken = get_distance_elevation(routes[0])
 
     names = [name for _, _, _, name in routes]
     speeds = [distance_covered / float(len(lat) / 3600)
@@ -82,6 +94,7 @@ def get_all_stats(routes):
     ret_info = {
         'distance_covered': distance_covered,
         'elevation_gain': elevation_gain,
+        'time_taken': time_taken,
         'speed_plot': (names, speeds)
     }
 
@@ -135,9 +148,6 @@ def get_coordinates_info(start, end, mid=(0, 0)):
                               idx_start: idx_end], coords['ele'].tolist()[idx_start: idx_end], name))
         else:
             continue
-
-    if not(check_uniqueness(routes)):
-        return False
 
     return get_all_stats(routes)
 
@@ -235,7 +245,7 @@ def Filter_data(d):
     dval = []
     for key, val in d.items():
         dk.append(key)
-    dk.sort(key=lambda date: datetime.strptime(date, "%m/%d/%y"))
+    dk.sort(key=lambda date: datetime.strptime(date, "%d/%m/%y"))
     for i in dk:
         dval.append(d[i])
     return dk, dval
@@ -323,68 +333,54 @@ def isFloat(temp):
         return 0
 
 
-def process_coordinates_data(ents, rider_name):
+def process_coordinates_data(ents):
+
+    global rider
 
     if len(data) == 0:
         messagebox.showerror("Error", "Select GPX directory first.")
         return 0
 
+    if rider == "":
+        messagebox.showerror("Error", "Select a Rider first.")
+        return 0
+
     start = 0
-    mid = 0
-    end = 0 
+    mid = (0, 0)
+    end = 0
+
+    rider_name = rider
 
     if isFloat(ents['start_Lat'].get()) and isFloat(ents['start_Long'].get()):
-        start = (float(ents['start_Lat'].get()),
-                 float(ents['start_Long'].get()))
+        start = (round(float(ents['start_Lat'].get()), 5),
+                 round(float(ents['start_Long'].get()), 5))
     if isFloat(ents['mid_Lat'].get()) and isFloat(ents['mid_Long'].get()):
-        mid = (float(ents['mid_Lat'].get()), float(ents['mid_Long'].get()))
+        mid = (round(float(ents['mid_Lat'].get()), 5), round(float(ents['mid_Long'].get()), 5))
     if isFloat(ents['end_Lat'].get()) and isFloat(ents['end_Long'].get()):
-        end = (float(ents['end_Lat'].get()), float(ents['end_Long'].get()))
+        end = (round(float(ents['end_Lat'].get()), 5), round(float(ents['end_Long'].get()), 5))
 
     if (start == 0 or end == 0):
         messagebox.showerror("Error", "Enter valid start and end coordinates.")
         return 0
 
-    info = get_coordinates_info(start, end, rider_name, mid=(0, 0))
+    info = get_coordinates_info(start, end, mid)
 
     if info == 0:
         messagebox.showerror("Error", "More than one path exists or no path.")
         return 0
 
-    plot_window = Toplevel()
-    plot_window.geometry("1000x1000")
-    plot_window.title("Statistics")
+    plt.clf()
 
-    fig = Figure(figsize=(9, 9), dpi=100)
+    plt.stem(info['speed_plot'][0], info['speed_plot'][1])
+    plt.ylabel("Average Speed (km/hr)")
+    plt.title("Speed vs. Trip")
+    plt.xticks(rotation='vertical')
+    plt.savefig("coord_speed_plot.png", bbox_inches='tight')
 
-    plot = fig.add_subplot(111)
+    ret = {}
+    ret['speed'] = sum(info['speed_plot'][1]) / len(info['speed_plot'][0]),
+    ret['dist'] = info['distance_covered']
+    ret['ele'] = info['elevation_gain']
+    ret['time'] = info['time_taken']
 
-    plot.scatter(info['speed_plot'][0], info['speed_plot'][1])
-
-    plot.set_title("Speed throughout trips (in km/hr)")
-
-    fig.tight_layout()
-
-    canvas = FigureCanvasTkAgg(fig, master=plot_window)
-    canvas.draw()
-
-    toolbar = NavigationToolbar2Tk(canvas, plot_window)
-    toolbar.update()
-
-    canvas.get_tk_widget().pack()
-
-    summary_window = Toplevel()
-    summary_window.geometry("400x300")
-    mylist = Listbox(summary_window, width=20, height=10)
-    mylist.pack(padx=10, pady=10, fill="both", expand=True)
-
-    mylist.insert(END, "Distance Covered (in Km): {}".format(
-        info['distance_covered']))
-    mylist.insert(END, "Elevation Gain (in feet): {}".format(
-        info['elevation_gain']))
-    mylist.insert(END, "Mean Speed: {}".format(np.mean(info['speed_plot'][1])))
-    mylist.insert(END, "Standard Deviation of speed: {}".format(
-        np.std(info['speed_plot'][1])))
-
-    plot_window.mainloop()
-    summary_window.mainloop()
+    return ret
