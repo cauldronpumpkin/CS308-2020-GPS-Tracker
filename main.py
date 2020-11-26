@@ -18,7 +18,6 @@ from process_coordinates import *
 import time
 from PIL import Image
 
-
 fields = ('start_Lat', 'start_Long', 'mid_Lat', 'mid_Long',
           'end_Lat', 'end_Long',)
 
@@ -26,13 +25,14 @@ fields = ('start_Lat', 'start_Long', 'mid_Lat', 'mid_Long',
 
 def Process(rider_name):
 
-    global dist_img,speed_img,ele_img
+    global dist_img,speed_img,ele_img,coord_speed_img
 
     plot(rider_name)     
 
     dist_img = PhotoImage(file = r"./dist_plot.png")
     speed_img= PhotoImage(file = r"./speed_plot.png")
     ele_img = PhotoImage(file = r"./ele_plot.png")
+    coord_speed_img = PhotoImage(file = r"./coord_speed_plot.png")
 
 
 
@@ -110,9 +110,13 @@ def speed_plot_window():
 def ele_plot_window():
     global ele_img
     l.configure(image=ele_img, width=735, height=485, bg='white')
+def coord_speed_plot_window():
+    global coord_speed_img
+    l.configure(image=coord_speed_img, width=735, height=485, bg='white')
 
 
-def Cordinate_form(root):
+
+def Coordinate_form(root):
     '''
     
     This is just a form, figure out a way to get input from it
@@ -128,40 +132,44 @@ def Cordinate_form(root):
     e = Label(form_frame, text="End Longitude").grid(row=4, column=0)
     f = Label(form_frame, text="End Longitude").grid(row=5, column=0)
 
-    a1 = Entry(form_frame).grid(row=0, column=1)
-    b1 = Entry(form_frame).grid(row=1, column=1)
-    c1 = Entry(form_frame).grid(row=2, column=1)
-    d1 = Entry(form_frame).grid(row=3, column=1)
-    e1 = Entry(form_frame).grid(row=4, column=1)
-    f1 = Entry(form_frame).grid(row=5, column=1)
+    a1 = Entry(form_frame)
+    a1.grid(row=0, column=1)
+    b1 = Entry(form_frame)
+    b1.grid(row=1, column=1)
+    c1 = Entry(form_frame)
+    c1.grid(row=2, column=1)
+    d1 = Entry(form_frame)
+    d1.grid(row=3, column=1)
+    e1 = Entry(form_frame)
+    e1.grid(row=4, column=1)
+    f1 = Entry(form_frame)
+    f1.grid(row=5, column=1)
+
 
     form_frame.place(relx=0.06, rely=0.2)
 
+    return {'start_Lat': a1, 'start_Long': b1, 'mid_Lat': c1, 'mid_Long': d1, 'end_Lat': e1, 'end_Long': f1};
+
 
 def Route_Stats():
-#     # When you press submit this function is triggered
-#     #In this function fill all the stats in their respective labels
-    
-#     # Uncomment the following 
-    
-    # s1val.config(text="Value of stat")
-    # s2val.config(text="Value of stat")
-    # s3val.config(text="Value of stat")
-    # s4val.config(text="Value of stat")
-    # s5val.config(text="Value of stat")
-    pass
+    global ents
+    stats = process_coordinates_data(ents)
+    coord_speed_plot_window()
 
-
-
-
-
-
+    s1val.config(text="{} km".format(round(stats['dist'], 2)))
+    s2val.config(text="{} km/hr".format(round(stats['speed'][0], 2)))
+    s3val.config(text="{} feet".format(round(stats['ele'],2 )))
+    s4val.config(text="{} min".format(round(stats['time'], 2)))
 
 root = tk.Tk()
 root.geometry("1500x1000")
 root.title("GPS Route Analyser")
 filename = StringVar()
 filepath = StringVar()
+
+# (31.7547, 76.9689) (31.7798, 76.9846)
+# (31.7546, 76.969) (31.78, 76.9841)
+
 
 # create all of the main containers
 
@@ -210,24 +218,23 @@ route_txt.place(relx=0.1, rely=0.1)
 
 
 
-Cordinate_form(btm_left)
+ents = Coordinate_form(btm_left)
 stats_frame = Frame(btm_left, width=200, height=300)
 s1 = Label(stats_frame, text="Route Distance: ").grid(row=0, column=0)
 s2 = Label(stats_frame, text="Average Speed: ").grid(row=1, column=0)
-s3 = Label(stats_frame, text="Highest Elevation: ").grid(row=2, column=0)
-s4 = Label(stats_frame, text="Lowest Elevation: ").grid(row=3, column=0)
-s5 = Label(stats_frame, text="Time Taken: ").grid(row=4, column=0)
+s3 = Label(stats_frame, text="Total Elevation: ").grid(row=2, column=0)
+s4 = Label(stats_frame, text="Time Taken: ").grid(row=3, column=0)
 
 
 
-s1val = Label(stats_frame).grid(row=0, column=1)
-s2val = Label(stats_frame).grid(row=1, column=1)
-s3val = Label(stats_frame).grid(row=2, column=1)
-s4val = Label(stats_frame).grid(row=3, column=1)
-s5val = Label(stats_frame).grid(row=4, column=1)
-
-
-
+s1val = Label(stats_frame)
+s1val.grid(row=0, column=1)
+s2val = Label(stats_frame)
+s2val.grid(row=1, column=1)
+s3val = Label(stats_frame)
+s3val.grid(row=2, column=1)
+s4val = Label(stats_frame)
+s4val.grid(row=3, column=1)
 
 stats_frame.place(relx=0.65, rely=0.21)
 submit_btn = tk.Button(btm_left, text="Submit", command=Route_Stats)
@@ -240,13 +247,15 @@ try:
     dist_img = PhotoImage(file = r"./dist_plot.png")
     speed_img = PhotoImage(file = r"./speed_plot.png")
     ele_img = PhotoImage(file = r"./ele_plot.png")
+    coord_speed_img = PhotoImage(file = r"./coord_speed_plot.png")
 except:
     im = Image.new('RGB', (580,484))
-    for img_name in ("dist_plot", "speed_plot", "ele_plot"):
+    for img_name in ("dist_plot", "speed_plot", "ele_plot", "coord_speed_img"):
         im.save(img_name + ".png",format("PNG"))
     dist_img = PhotoImage(file = r"./dist_plot.png")
     speed_img = PhotoImage(file = r"./speed_plot.png")
     ele_img = PhotoImage(file = r"./ele_plot.png")
+    coord_speed_img = PhotoImage(file = r"./coord_speed_plot.png")
 
 
 l = Label(btm_right)
