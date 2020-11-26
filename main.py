@@ -32,7 +32,6 @@ def Process(rider_name):
     dist_img = PhotoImage(file = r"./dist_plot.png")
     speed_img= PhotoImage(file = r"./speed_plot.png")
     ele_img = PhotoImage(file = r"./ele_plot.png")
-    coord_speed_img = PhotoImage(file = r"./coord_speed_plot.png")
 
 
 
@@ -90,7 +89,6 @@ def pick_folder(*args):
         initialdir="/", title="Select directory")
 
     if path != "":
-        print(path)
         file_txt.config(text=path)
         dynamic_button.config(bg='green')
         filepath.set(path)
@@ -152,14 +150,15 @@ def Coordinate_form(root):
 
 
 def Route_Stats():
-    global ents
+    global ents, coord_speed_img
     stats = process_coordinates_data(ents)
+    coord_speed_img = PhotoImage(file = r"./coord_speed_plot.png")
     coord_speed_plot_window()
 
     s1val.config(text="{} km".format(round(stats['dist'], 2)))
-    s2val.config(text="{} km/hr".format(round(stats['speed'][0], 2)))
-    s3val.config(text="{} feet".format(round(stats['ele'],2 )))
-    s4val.config(text="{} min".format(round(stats['time'], 2)))
+    s2val.config(text="{} km/hr".format(round(stats['speed'], 2)))
+    s3val.config(text="{} feet".format(round(stats['ele'], 2)))
+    s4val.config(text="{} hr".format(round(stats['time'], 2)))
 
 root = tk.Tk()
 root.geometry("1500x1000")
@@ -168,8 +167,8 @@ filename = StringVar()
 filepath = StringVar()
 
 # (31.7547, 76.9689) (31.7798, 76.9846)
-# (31.7546, 76.969) (31.78, 76.9841)
 
+# (31.7743, 76.9814) (31.7749, 76.9816)
 
 # create all of the main containers
 
@@ -177,7 +176,6 @@ top_left = Frame(root, width=750, height=500, pady=3, highlightcolor='black',hig
 top_right = Frame(root, width=750, height=500, padx=3, pady=3, highlightcolor='black', highlightthickness=4, highlightbackground='black')
 btm_left = Frame(root, width=750, height=500, pady=3, highlightcolor='black', highlightthickness=4, highlightbackground='black')
 btm_right = Frame(root, width=750, height=500, pady=3, highlightcolor='black', highlightthickness=4, highlightbackground='black')
-
 
 fontStyle = tkFont.Font(family="Lucida Grande", size=20)
 fontStyle1 = tkFont.Font(family="Lucida Grande", size=10)
@@ -250,7 +248,7 @@ try:
     coord_speed_img = PhotoImage(file = r"./coord_speed_plot.png")
 except:
     im = Image.new('RGB', (580,484))
-    for img_name in ("dist_plot", "speed_plot", "ele_plot", "coord_speed_img"):
+    for img_name in ("dist_plot", "speed_plot", "ele_plot", "coord_speed_plot"):
         im.save(img_name + ".png",format("PNG"))
     dist_img = PhotoImage(file = r"./dist_plot.png")
     speed_img = PhotoImage(file = r"./speed_plot.png")
