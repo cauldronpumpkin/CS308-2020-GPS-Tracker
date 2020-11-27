@@ -10,6 +10,7 @@ import gpxpy.gpx
 import numpy as np
 import pandas as pd
 from geopy import distance
+from PIL import ImageTk, Image
 import matplotlib.pyplot as plt
 from datetime import datetime
 from dateutil import parser
@@ -22,8 +23,6 @@ d = e = s = None
 rider = ""
 
 
-
-
 def main(path):
 
     global data
@@ -32,12 +31,8 @@ def main(path):
 
     for dir in os.listdir(path):
         data[dir] = []
-        d = {}
-        d2 = {}
-        ii = 0
         for file in os.listdir(os.path.join(path, dir)):
             name = str(file).split('.')[0]
-            # d[name] = []
             gpx_file = open(os.path.join(os.path.join(path, dir), file), 'r')
 
             try:
@@ -54,42 +49,52 @@ def main(path):
 
             pair_of_coords = {}
             for i, p in enumerate(segment.points):
-                if ii == 0:
-                    d[(round(p.latitude, 5), round(p.longitude, 5))] = 1
-                elif ii == 1:
-                    if (round(p.latitude, 5), round(p.longitude, 5)) in d:
-                        d2[(round(p.latitude, 5), round(p.longitude, 5))] = 1
-                pair_of_coords[(round(p.latitude, 5), round(p.longitude, 5))] = i
+                pair_of_coords[(round(p.latitude, 4), round(p.longitude, 4))] = i
 
-            if ii == 1:
-                print(min(d2.keys()), max(d2.keys()))
-            ii += 1
             data[dir].append((coords, pair_of_coords, name))
     return data
 
 
 def get_distance_elevation(route):
 
-    lat, lon, ele, _ = route
+    lat, lon, ele, _, t = route
 
-    distance_covered = 0
+    total_dist = 0
+    total_time = 0
     elevation_gain = 0
 
-    for i in range(len(lat) - 1):
-        distance_covered += distance.geodesic(
-            (lat[i], lon[i]), (lat[i + 1], lon[i + 1])).km
-        elevation_gain += max(0, ele[i + 1] - ele[i])
+    FMT = "%m/%d/%Y, %H:%M:%S"
 
-    return (distance_covered, elevation_gain, len(lat) / 60)
+    for i in range(len(lat) - 1):
+        elevation_gain += max(0, ele[i + 1] - ele[i])
+        tmp_dist = distance.geodesic(
+                (lat[i], lon[i]), (lat[i + 1], lon[i + 1])).km
+        time_elapsed = abs(datetime.strptime(
+            t[i + 1].strftime(FMT), FMT) - datetime.strptime(t[i].strftime(FMT), FMT))
+        days, seconds = time_elapsed.days, time_elapsed.seconds
+        hours = days * 24 + seconds // 3600
+        minutes = (seconds % 3600) // 60
+        seconds = seconds % 60
+        total_dist += abs(tmp_dist)
+        total_time += abs(hours + minutes/60 + seconds/3600)
+
+    return (total_dist, elevation_gain, total_time)
 
 
 def get_all_stats(routes):
 
-    distance_covered, elevation_gain, time_taken = get_distance_elevation(routes[0])
+    distance_covered = 0
+    elevation_gain = 0
+    time_taken = 0
 
-    names = [name for _, _, _, name in routes]
-    speeds = [distance_covered / float(len(lat) / 3600)
-              for lat, _, _, _ in routes]
+    names = [name for _, _, _, name, _ in routes]
+    speeds = []
+    for i, route in enumerate(routes):
+        d, e, t = get_distance_elevation(route)
+        speeds.append(round((d / t), 2))
+        distance_covered = (distance_covered + d) / (i + 1)
+        elevation_gain = (elevation_gain + e) / (i + 1)
+        time_taken = (time_taken + t) / (i + 1)
 
     ret_info = {
         'distance_covered': distance_covered,
@@ -97,6 +102,9 @@ def get_all_stats(routes):
         'time_taken': time_taken,
         'speed_plot': (names, speeds)
     }
+
+    if len(routes) == 0:
+        return 0
 
     return ret_info
 
@@ -145,9 +153,12 @@ def get_coordinates_info(start, end, mid=(0, 0)):
 
             if (idx_start < idx_end and (idx_mid == -1 or (idx_start < idx_mid and idx_mid < idx_end))):
                 routes.append((coords['lat'].tolist()[idx_start: idx_end], coords['long'].tolist()[
-                              idx_start: idx_end], coords['ele'].tolist()[idx_start: idx_end], name))
+                              idx_start: idx_end], coords['ele'].tolist()[idx_start: idx_end], name, coords['time'].tolist()[idx_start:idx_end]))
         else:
             continue
+
+    if len(routes) == 0:
+        return 0
 
     return get_all_stats(routes)
 
@@ -227,7 +238,7 @@ def summarise(rider_name):
             d, e, s = get_attr_per_day(rider_name)
         return (round(np.mean(tuple(d.values())), 2), round(np.mean(tuple(e.values())), 2), round(max(tuple(s.values())), 2))
     else:
-        messagebox.showinfo("Loading", "Please Close this and wait for 5-10 seconds")
+        messagebox.showinfo("Loading", "Please Close this and wait for 4-10 seconds")
         d1, e1, s1 = get_attr_per_day(rider_name)
     
         return (round(np.mean(tuple(d1.values())), 2), round(np.mean(tuple(e1.values())), 2), round(max(tuple(s1.values())), 2))
@@ -249,24 +260,6 @@ def Filter_data(d):
     for i in dk:
         dval.append(d[i])
     return dk, dval
-
-
-
-
-def Route_stat(start, end):
-    '''
-    
-    For a particluar root stat, link it with gui as suitable
-
-    '''
-    stats = get_coordinates_info(start, end)
-    if stats != False:
-        print("Distance Covered: ", stats['distance_covered'])
-        print("Elevation Gain: ", stats['elevation_gain'])
-        print("Average Speed during Activity: ", stats['speed_plot'][1])
-    else:
-        print("Multiple routes possible, please specify")
-
 
 
 def plot(rider_name):
@@ -292,7 +285,7 @@ def plot(rider_name):
     
     if (d == None or rider_name != rider):
         messagebox.showinfo(
-            "Loading", "Please Close this and wait for 5-10 seconds")
+            "Loading", "Please Close this and wait for 4-10 seconds")
         d, e, s = get_attr_per_day(rider_name)
         rider = rider_name
 
@@ -352,12 +345,12 @@ def process_coordinates_data(ents):
     rider_name = rider
 
     if isFloat(ents['start_Lat'].get()) and isFloat(ents['start_Long'].get()):
-        start = (round(float(ents['start_Lat'].get()), 5),
-                 round(float(ents['start_Long'].get()), 5))
+        start = (round(float(ents['start_Lat'].get()), 4),
+                 round(float(ents['start_Long'].get()), 4))
     if isFloat(ents['mid_Lat'].get()) and isFloat(ents['mid_Long'].get()):
-        mid = (round(float(ents['mid_Lat'].get()), 5), round(float(ents['mid_Long'].get()), 5))
+        mid = (round(float(ents['mid_Lat'].get()), 4), round(float(ents['mid_Long'].get()), 4))
     if isFloat(ents['end_Lat'].get()) and isFloat(ents['end_Long'].get()):
-        end = (round(float(ents['end_Lat'].get()), 5), round(float(ents['end_Long'].get()), 5))
+        end = (round(float(ents['end_Lat'].get()), 4), round(float(ents['end_Long'].get()), 4))
 
     if (start == 0 or end == 0):
         messagebox.showerror("Error", "Enter valid start and end coordinates.")
@@ -366,8 +359,9 @@ def process_coordinates_data(ents):
     info = get_coordinates_info(start, end, mid)
 
     if info == 0:
-        messagebox.showerror("Error", "More than one path exists or no path.")
+        messagebox.showerror("Error", "No path Exists.")
         return 0
+
 
     plt.clf()
 
@@ -378,7 +372,7 @@ def process_coordinates_data(ents):
     plt.savefig("coord_speed_plot.png", bbox_inches='tight')
 
     ret = {}
-    ret['speed'] = sum(info['speed_plot'][1]) / len(info['speed_plot'][0]),
+    ret['speed'] = float(sum(info['speed_plot'][1]) / len(info['speed_plot'][0]))
     ret['dist'] = info['distance_covered']
     ret['ele'] = info['elevation_gain']
     ret['time'] = info['time_taken']
