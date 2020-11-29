@@ -30,8 +30,8 @@ def main(path):
     files = os.listdir(path)
     #selecting directory from lists of directory.
     for dir in os.listdir(path):
-        data[dir] = []      #creating data list of length directories
-        for file in os.listdir(os.path.join(path, dir)):    #creating path of the selected file.
+        data[dir] = []     
+        for file in os.listdir(os.path.join(path, dir)):    
             name = str(file).split('.')[0]
             gpx_file = open(os.path.join(os.path.join(path, dir), file), 'r')
             #creating try and except block to continue in case the file's path was not correctly found.
@@ -39,7 +39,7 @@ def main(path):
                 gpx = gpxpy.parse(gpx_file)
             except:
                 continue
-            #getting segments of input from file
+            
             segment = gpx.tracks[0].segments[0]
             #creating dataframe for input variables for latitudes, longitudes, elevation and time.
             coords = pd.DataFrame([{
