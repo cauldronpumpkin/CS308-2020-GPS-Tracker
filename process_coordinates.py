@@ -164,8 +164,8 @@ def get_coordinates_info(rider_name, start, end, mid=(0, 0)):
 
     if len(routes) == 0:
         return 0
-    #returning the coordinates info by sending the routes list in get_all_stats function to process the routes list and split it into usable stats. 
-    return get_all_stats(routes)
+    #returning the coordinates info by sending the routes list in get_all_stats function to process the routes list and split it into usable stats.     
+    return get_all_stats(routes), len(routes)
 
 #Returns a tuple of dictionaries for distance vs day, elevation-gain vs day and speed vs day plots
 def get_attr_per_day(rider_name):
@@ -247,9 +247,9 @@ def Filter_data(d):
 
     dk = []
     dval = []
-    for key, val in d.items():
+    for key, _ in d.items():
         dk.append(key)
-    dk.sort(key=lambda date: datetime.strptime(date, "%d/%m/%y"))
+    dk.sort(key=lambda date: datetime.strptime(date, "%m/%d/%y"))
     for i in dk:
         dval.append(d[i])
     return dk, dval
@@ -347,9 +347,10 @@ def process_coordinates_data(ents, rider_name=None):
     if (start == 0 or end == 0):
         messagebox.showerror("Error", "Enter valid start and end coordinates.")
         return 0
-    #getting coordinates information by passing the float entries in get_coordinates_info function.
-    info = get_coordinates_info(rider_name, start, end, mid)
+    # getting coordinates information by passing the float entries in get_coordinates_info function.
+    info, trips = get_coordinates_info(rider_name, start, end, mid)
     #raise error incase no information is provided.
+
     if info == 0:
         messagebox.showerror("Error", "No path Exists.")
         return 0
@@ -359,5 +360,6 @@ def process_coordinates_data(ents, rider_name=None):
     ret['dist'] = info['distance_covered']      #updating ret dictionary by getting the information of coordinates from the entries.
     ret['ele'] = info['elevation_gain']
     ret['time'] = info['time_taken']
+    ret['trips'] = trips
 
     return ret

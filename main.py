@@ -242,6 +242,7 @@ def process_other_rider_segment(event):
         lb.place(relx=0.5, rely=0.7)
         lb.insert(1, "Average Time taken: {} min".format(round(stats['time'] * 60, 2)))
         lb.insert(2, "Average speed: {} km/hr".format(round(stats['speed'], 2)))
+        lb.insert(3, "Number of trips: {}".format(stats['trips']))
         load.increment_loading(60)
     except:
         print("{} has no data".format(other_rider_segment.get()))
@@ -268,6 +269,7 @@ def Route_Stats():
         lb.place(relx=0.05, rely=0.7)
         lb.insert(1, "Average Time taken: {} min".format(round(stats['time'] * 60, 2)))
         lb.insert(2, "Average speed: {} km/hr".format(round(stats['speed'], 2)))
+        lb.insert(3, "Number of trips: {}".format(stats['trips']))
         load.increment_loading(60)
     except:
         print("{} has no data".format(rider_name.get()))
