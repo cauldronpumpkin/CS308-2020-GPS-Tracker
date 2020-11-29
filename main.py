@@ -18,6 +18,7 @@ from process_coordinates import *
 import time
 from PIL import Image
 
+#global variable describing input parameters.
 fields = ('start_Lat', 'start_Long', 'mid_Lat', 'mid_Long',
           'end_Lat', 'end_Long',)
 
@@ -43,6 +44,7 @@ class LoadingScreen(Toplevel):
         if(increment == 100):
             time.sleep(0.2)
 
+#funtion to process speed image, element image, rider and distance image.
 def Process(rider_name):
 
     global dist_img, speed_img, ele_img, rider
@@ -53,10 +55,11 @@ def Process(rider_name):
     speed_img= PhotoImage(file = r"./speed_plot.png")
     ele_img = PhotoImage(file = r"./ele_plot.png")
 
+#adding primary buttons to do tasks as required by the user.
 def call_primary_buttons():
     global data, root, rider_name
 
-    def process_data_button(event):
+    def process_data_button(event):     #this process data button starts the process.
         load = LoadingScreen(root)
         load.grab_set()
         load.increment_loading(20)
@@ -77,11 +80,11 @@ def call_primary_buttons():
         load.grab_release()
         load.destroy()
     
-    def compare_data_button(event):
+    def compare_data_button(event):     #function to trigger compare data button to compare the data result.
         load = LoadingScreen(root)
         load.grab_set()
         load.increment_loading(25)
-        try:
+        try:                            #adding try except troubleshoot to display the error if no data is provided.
             Label(top_right, text=other_rider_name.get() + " Statistics", font=fontStyle1).place(relx=0.65, rely=0.40)
             lb = Listbox(top_right, width=40, height=7)
             lb.place(relx=0.50, rely=0.45)
@@ -96,16 +99,16 @@ def call_primary_buttons():
         load.increment_loading(100)
         load.grab_release()
         load.destroy()
-
+    #printing the combobox to select the rider.
     Label(top_left, text="Select the rider: ", font=fontStyle1).place(relx=0.27, rely=0.91)
     rider_chosen = ttk.Combobox(top_left, width = 20, textvariable = rider_name)
     rider_chosen['values'] = tuple(data.keys())
     rider_chosen.place(relx=0.45,rely=0.91)
     rider_chosen.bind('<<ComboboxSelected>>', process_data_button)
-
+    #printing the compare button.
     compare = Label(top_right, text="Compare your Stats with others", font=fontStyle)
     compare.place(relx=0.22, rely=0.2)
-
+    #printing combobox to select the name of the rider to be compared with.
     Label(top_right, text="Select rider to compare with: ", font=fontStyle1).place(relx=0.15, rely=0.30)
     other_rider_name = tk.StringVar()
     other_rider_chosen = ttk.Combobox(top_right, width = 20, textvariable = other_rider_name)
@@ -114,7 +117,7 @@ def call_primary_buttons():
     other_rider_chosen.bind('<<ComboboxSelected>>', compare_data_button)
 
 
-
+#function to select the file for the folder
 def pick_folder(*args):
 
     global ents, btm_left
@@ -133,21 +136,21 @@ def pick_folder(*args):
     else:
         return
 
-
+#function to plot the window of distance
 def dist_plot_window():
     global dist_img, rider
     if rider == "":
         messagebox.showerror("Error", "Select a Rider first.")
         return 
     l.configure(image=dist_img, width=735, height=485, bg='white')
-
+#function to plot the window of speed
 def speed_plot_window():
     global speed_img, rider
     if rider == "":
         messagebox.showerror("Error", "Select a Rider first.")
         return 
     l.configure(image=speed_img, width=735, height=485, bg='white')
-
+#function to plot the window of elevation
 def ele_plot_window():
     global ele_img, rider
     if rider == "":
@@ -156,7 +159,7 @@ def ele_plot_window():
     l.configure(image=ele_img, width=735, height=485, bg='white')
 
 
-
+#form to taking input of the parameters
 def Coordinate_form(root):
     '''
     
@@ -206,13 +209,13 @@ def Coordinate_form(root):
     # f1 = Entry(form_frame)
     # f1.grid(row=5, column=1)
     # f1.insert(0, "76.9816")
-
+    #combobox to select the name of the rider to be compared with.
     Label(root, text="Compare with: ", font=fontStyle1).place(relx=0.6, rely=0.2)
     other_rider_chosen = ttk.Combobox(root, width = 20, textvariable = other_rider_segment)
     other_rider_chosen['values'] = tuple(data.keys())
     other_rider_chosen.place(relx=0.75,rely=0.2)
     other_rider_chosen.bind('<<ComboboxSelected>>', process_other_rider_segment)
-
+    #button to submit the button final input
     submit_btn = tk.Button(root, text="Submit", command=Route_Stats)
     submit_btn.place(relx=0.5,rely=0.3)
 
@@ -221,7 +224,7 @@ def Coordinate_form(root):
 
     return {'start_Lat': a1, 'start_Long': b1, 'mid_Lat': c1, 'mid_Long': d1, 'end_Lat': e1, 'end_Long': f1}
 
-
+#function to process other rider segment
 def process_other_rider_segment(event):
 
     global ents, other_rider_segment
@@ -233,7 +236,7 @@ def process_other_rider_segment(event):
     load.increment_loading(40)
     stats = process_coordinates_data(ents, other_rider_segment.get())
 
-    try:
+    try:              #try and except troubleshoot to raise error in case there is no data provided.
         Label(btm_left, text=other_rider_segment.get() + " Statistics", font=fontStyle1).place(relx=0.65, rely=0.65)
         lb = Listbox(btm_left, width=40, height=4)
         lb.place(relx=0.5, rely=0.7)
@@ -248,7 +251,7 @@ def process_other_rider_segment(event):
     load.grab_release()
     load.destroy()
 
-
+#function to call process function and process_cordinates_data function to give routes data.
 def Route_Stats():
 
     global ents
@@ -260,7 +263,7 @@ def Route_Stats():
     load.increment_loading(40)
     stats = process_coordinates_data(ents)
 
-    try:
+    try:            #try and except troubleshoot to raise error in case no data is provided.
         Label(btm_left, text=rider_name.get() + " Statistics", font=fontStyle1).place(relx=0.20, rely=0.65)
         lb = Listbox(btm_left, width=40, height=4)
         lb.place(relx=0.05, rely=0.7)
@@ -353,7 +356,7 @@ except:
 l = Label(btm_right)
 l.place(relx=0, rely=0)
 
-
+#priting all the graphs according to the button user presses, speed button, elevation button or distance button.
 
 graphs = Label(top_right, text="Overall Statistics", font=fontStyle)
 graphs.place(relx=0.35)
