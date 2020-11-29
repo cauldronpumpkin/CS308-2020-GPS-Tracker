@@ -130,21 +130,21 @@ def check_uniqueness(routes):
     return True
 
 
-def get_coordinates_info(start, end, mid=(0, 0)):
+def get_coordinates_info(rider_name, start, end, mid=(0, 0)):
 
-    global data, rider
+    global data
 
     if len(data) == 0:
         messagebox.showerror("Error", "Select GPX directory first.")
         return
 
-    if(rider == ""):
+    if(rider_name == ""):
         messagebox.showerror("Error", "Select a rider first.")
         return
         
     routes = []
-    for i in range(len(data[rider])):
-        coords, pair_of_coordinates, name = data[rider][i]
+    for i in range(len(data[rider_name])):
+        coords, pair_of_coordinates, name = data[rider_name][i]
         if start in pair_of_coordinates and end in pair_of_coordinates and (mid == (0, 0) or mid in pair_of_coordinates):
 
             idx_start = pair_of_coordinates[start]
@@ -238,9 +238,7 @@ def summarise(rider_name):
             d, e, s = get_attr_per_day(rider_name)
         return (round(np.mean(tuple(d.values())), 2), round(np.mean(tuple(e.values())), 2), round(max(tuple(s.values())), 2))
     else:
-        # messagebox.showinfo("Loading", "Please Close this and wait for 4-10 seconds")
         d1, e1, s1 = get_attr_per_day(rider_name)
-    
         return (round(np.mean(tuple(d1.values())), 2), round(np.mean(tuple(e1.values())), 2), round(max(tuple(s1.values())), 2))
 
 
@@ -256,7 +254,7 @@ def Filter_data(d):
     dval = []
     for key, val in d.items():
         dk.append(key)
-    dk.sort(key=lambda date: datetime.strptime(date, "%m/%d/%y"))
+    dk.sort(key=lambda date: datetime.strptime(date, "%d/%m/%y"))
     for i in dk:
         dval.append(d[i])
     return dk, dval
@@ -284,7 +282,6 @@ def plot(rider_name):
         return
     
     if (d == None or rider_name != rider):
-        # messagebox.showinfo("Loading", "Please Close this and wait for 4-10 seconds")
         d, e, s = get_attr_per_day(rider_name)
         rider = rider_name
 
@@ -325,23 +322,24 @@ def isFloat(temp):
         return 0
 
 
-def process_coordinates_data(ents):
+def process_coordinates_data(ents, rider_name=None):
 
     global rider
 
-    if len(data) == 0:
-        messagebox.showerror("Error", "Select GPX directory first.")
-        return 0
-
-    if rider == "":
-        messagebox.showerror("Error", "Select a Rider first.")
-        return 0
+    if rider_name == None:
+        rider_name = rider
 
     start = 0
     mid = (0, 0)
     end = 0
 
-    rider_name = rider
+    if len(data) == 0:
+        messagebox.showerror("Error", "Select GPX directory first.")
+        return 0
+
+    if rider_name == "":
+        messagebox.showerror("Error", "Select a Rider first.")
+        return 0
 
     if isFloat(ents['start_Lat'].get()) and isFloat(ents['start_Long'].get()):
         start = (round(float(ents['start_Lat'].get()), 4),
@@ -355,20 +353,11 @@ def process_coordinates_data(ents):
         messagebox.showerror("Error", "Enter valid start and end coordinates.")
         return 0
 
-    info = get_coordinates_info(start, end, mid)
+    info = get_coordinates_info(rider_name, start, end, mid)
 
     if info == 0:
         messagebox.showerror("Error", "No path Exists.")
         return 0
-
-
-    plt.clf()
-
-    plt.stem(info['speed_plot'][0], info['speed_plot'][1])
-    plt.ylabel("Average Speed (km/hr)")
-    plt.title("Speed vs. Trip")
-    plt.xticks(rotation='vertical')
-    plt.savefig("coord_speed_plot.png", bbox_inches='tight')
 
     ret = {}
     ret['speed'] = float(sum(info['speed_plot'][1]) / len(info['speed_plot'][0]))

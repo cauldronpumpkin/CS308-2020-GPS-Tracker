@@ -45,7 +45,7 @@ class LoadingScreen(Toplevel):
 
 def Process(rider_name):
 
-    global dist_img,speed_img,ele_img,coord_speed_img, rider
+    global dist_img, speed_img, ele_img, rider
 
     plot(rider_name)     
     rider = rider_name
@@ -53,10 +53,8 @@ def Process(rider_name):
     speed_img= PhotoImage(file = r"./speed_plot.png")
     ele_img = PhotoImage(file = r"./ele_plot.png")
 
-
-
 def call_primary_buttons():
-    global data, root
+    global data, root, rider_name
 
     def process_data_button(event):
         load = LoadingScreen(root)
@@ -100,7 +98,6 @@ def call_primary_buttons():
         load.destroy()
 
     Label(top_left, text="Select the rider: ", font=fontStyle1).place(relx=0.27, rely=0.91)
-    rider_name = tk.StringVar()
     rider_chosen = ttk.Combobox(top_left, width = 20, textvariable = rider_name)
     rider_chosen['values'] = tuple(data.keys())
     rider_chosen.place(relx=0.45,rely=0.91)
@@ -120,6 +117,8 @@ def call_primary_buttons():
 
 def pick_folder(*args):
 
+    global ents, btm_left
+
     path = filedialog.askdirectory(
         initialdir="/", title="Select directory")
 
@@ -130,6 +129,7 @@ def pick_folder(*args):
         filename.set(path.split('/')[-1])
         main(path)
         call_primary_buttons()
+        ents = Coordinate_form(btm_left)
     else:
         return
 
@@ -155,13 +155,6 @@ def ele_plot_window():
         return 
     l.configure(image=ele_img, width=735, height=485, bg='white')
 
-def coord_speed_plot_window():
-    global coord_speed_img, rider
-    if rider == "":
-        messagebox.showerror("Error", "Select a Rider first.")
-        return 
-    l.configure(image=coord_speed_img, width=735, height=485, bg='white')
-
 
 
 def Coordinate_form(root):
@@ -171,14 +164,18 @@ def Coordinate_form(root):
     Return a dict (ents) and pass it to Route Stats function
     
     '''
+
+    global data, other_rider_segment
     
     form_frame = Frame(root, width=200, height=300)
-    a = Label(form_frame, text="Start Latitude").grid(row=0, column=0)
-    b = Label(form_frame, text="Start Longitude").grid(row=1, column=0)
-    c = Label(form_frame, text="Mid Latitude").grid(row=2, column=0)
-    d = Label(form_frame, text="Mid Longitude").grid(row=3, column=0)
-    e = Label(form_frame, text="End Lattitude").grid(row=4, column=0)
-    f = Label(form_frame, text="End Longitude").grid(row=5, column=0)
+    Label(form_frame, text="Start Latitude").grid(row=0, column=0)
+    Label(form_frame, text="Start Longitude").grid(row=1, column=0)
+    Label(form_frame, text="Mid Latitude").grid(row=2, column=0)
+    Label(form_frame, text="Mid Longitude").grid(row=3, column=0)
+    Label(form_frame, text="End Longitude").grid(row=4, column=0)
+    Label(form_frame, text="End Longitude").grid(row=5, column=0)
+
+    # (31.7743, 76.9814) (31.7749, 76.9816)
 
     a1 = Entry(form_frame)
     a1.grid(row=0, column=1)
@@ -193,22 +190,88 @@ def Coordinate_form(root):
     f1 = Entry(form_frame)
     f1.grid(row=5, column=1)
 
+    # a1 = Entry(form_frame)
+    # a1.grid(row=0, column=1)
+    # a1.insert(0, "31.7743")
+    # b1 = Entry(form_frame)
+    # b1.grid(row=1, column=1)
+    # b1.insert(0, "76.9814")
+    # c1 = Entry(form_frame)
+    # c1.grid(row=2, column=1)
+    # d1 = Entry(form_frame)
+    # d1.grid(row=3, column=1)
+    # e1 = Entry(form_frame)
+    # e1.grid(row=4, column=1)
+    # e1.insert(0, "31.7749")
+    # f1 = Entry(form_frame)
+    # f1.grid(row=5, column=1)
+    # f1.insert(0, "76.9816")
+
+    Label(root, text="Compare with: ", font=fontStyle1).place(relx=0.6, rely=0.2)
+    other_rider_chosen = ttk.Combobox(root, width = 20, textvariable = other_rider_segment)
+    other_rider_chosen['values'] = tuple(data.keys())
+    other_rider_chosen.place(relx=0.75,rely=0.2)
+    other_rider_chosen.bind('<<ComboboxSelected>>', process_other_rider_segment)
+
+    submit_btn = tk.Button(root, text="Submit", command=Route_Stats)
+    submit_btn.place(relx=0.5,rely=0.3)
+
 
     form_frame.place(relx=0.06, rely=0.2)
 
-    return {'start_Lat': a1, 'start_Long': b1, 'mid_Lat': c1, 'mid_Long': d1, 'end_Lat': e1, 'end_Long': f1};
+    return {'start_Lat': a1, 'start_Long': b1, 'mid_Lat': c1, 'mid_Long': d1, 'end_Lat': e1, 'end_Long': f1}
+
+
+def process_other_rider_segment(event):
+
+    global ents, other_rider_segment
+
+    load = LoadingScreen(root)
+    load.grab_set()
+    load.increment_loading(20)
+    Process(rider_name.get())
+    load.increment_loading(40)
+    stats = process_coordinates_data(ents, other_rider_segment.get())
+
+    try:
+        Label(btm_left, text=other_rider_segment.get() + " Statistics", font=fontStyle1).place(relx=0.65, rely=0.65)
+        lb = Listbox(btm_left, width=40, height=4)
+        lb.place(relx=0.5, rely=0.7)
+        lb.insert(1, "Average Time taken: {} min".format(round(stats['time'] * 60, 2)))
+        lb.insert(2, "Average speed: {} km/hr".format(round(stats['speed'], 2)))
+        load.increment_loading(60)
+    except:
+        print("{} has no data".format(other_rider_segment.get()))
+
+    load.increment_loading(100)
+    load.grab_release()
+    load.destroy()
 
 
 def Route_Stats():
-    global ents, coord_speed_img
-    stats = process_coordinates_data(ents)
-    coord_speed_img = PhotoImage(file = r"./coord_speed_plot.png")
-    coord_speed_plot_window()
 
-    s1val.config(text="{} km".format(round(stats['dist'], 2)))
-    s2val.config(text="{} km/hr".format(round(stats['speed'], 2)))
-    s3val.config(text="{} feet".format(round(stats['ele'], 2)))
-    s4val.config(text="{} hr".format(round(stats['time'], 2)))
+    global ents
+
+    load = LoadingScreen(root)
+    load.grab_set()
+    load.increment_loading(20)
+    Process(rider_name.get())
+    load.increment_loading(40)
+    stats = process_coordinates_data(ents)
+
+    try:
+        Label(btm_left, text=rider_name.get() + " Statistics", font=fontStyle1).place(relx=0.20, rely=0.65)
+        lb = Listbox(btm_left, width=40, height=4)
+        lb.place(relx=0.05, rely=0.7)
+        lb.insert(1, "Average Time taken: {} min".format(round(stats['time'] * 60, 2)))
+        lb.insert(2, "Average speed: {} km/hr".format(round(stats['speed'], 2)))
+        load.increment_loading(60)
+    except:
+        print("{} has no data".format(rider_name.get()))
+    
+    load.increment_loading(100)
+    load.grab_release()
+    load.destroy()
 
 root = tk.Tk()
 root.geometry("1500x1000")
@@ -221,6 +284,9 @@ filepath = StringVar()
 # (31.7743, 76.9814) (31.7749, 76.9816)
 
 # create all of the main containers
+
+rider_name = tk.StringVar()
+other_rider_segment = tk.StringVar()
 
 top_left = Frame(root, width=750, height=500, pady=3, highlightcolor='black',highlightthickness=4, highlightbackground='black')
 top_right = Frame(root, width=750, height=500, padx=3, pady=3, highlightcolor='black', highlightthickness=4, highlightbackground='black')
@@ -267,44 +333,19 @@ route_txt.place(relx=0.1, rely=0.1)
 
 
 
-ents = Coordinate_form(btm_left)
-stats_frame = Frame(btm_left, width=200, height=300)
-s1 = Label(stats_frame, text="Route Distance: ").grid(row=0, column=0)
-s2 = Label(stats_frame, text="Average Speed: ").grid(row=1, column=0)
-s3 = Label(stats_frame, text="Total Elevation: ").grid(row=2, column=0)
-s4 = Label(stats_frame, text="Time Taken: ").grid(row=3, column=0)
-
-
-
-s1val = Label(stats_frame)
-s1val.grid(row=0, column=1)
-s2val = Label(stats_frame)
-s2val.grid(row=1, column=1)
-s3val = Label(stats_frame)
-s3val.grid(row=2, column=1)
-s4val = Label(stats_frame)
-s4val.grid(row=3, column=1)
-
-stats_frame.place(relx=0.65, rely=0.21)
-submit_btn = tk.Button(btm_left, text="Submit", command=Route_Stats)
-submit_btn.place(relx=0.5,rely=0.3)
-
-
-
+ents = None
 
 try:
     dist_img = PhotoImage(file = r"./dist_plot.png")
     speed_img = PhotoImage(file = r"./speed_plot.png")
     ele_img = PhotoImage(file = r"./ele_plot.png")
-    coord_speed_img = PhotoImage(file = r"./coord_speed_plot.png")
 except:
     im = Image.new('RGB', (580,484))
-    for img_name in ("dist_plot", "speed_plot", "ele_plot", "coord_speed_plot"):
+    for img_name in ("dist_plot", "speed_plot", "ele_plot"):
         im.save(img_name + ".png",format("PNG"))
     dist_img = PhotoImage(file = r"./dist_plot.png")
     speed_img = PhotoImage(file = r"./speed_plot.png")
     ele_img = PhotoImage(file = r"./ele_plot.png")
-    coord_speed_img = PhotoImage(file = r"./coord_speed_plot.png")
 
 
 l = Label(btm_right)
