@@ -238,7 +238,7 @@ def summarise(rider_name):
             d, e, s = get_attr_per_day(rider_name)
         return (round(np.mean(tuple(d.values())), 2), round(np.mean(tuple(e.values())), 2), round(max(tuple(s.values())), 2))
     else:
-        messagebox.showinfo("Loading", "Please Close this and wait for 4-10 seconds")
+        # messagebox.showinfo("Loading", "Please Close this and wait for 4-10 seconds")
         d1, e1, s1 = get_attr_per_day(rider_name)
     
         return (round(np.mean(tuple(d1.values())), 2), round(np.mean(tuple(e1.values())), 2), round(max(tuple(s1.values())), 2))
@@ -256,7 +256,7 @@ def Filter_data(d):
     dval = []
     for key, val in d.items():
         dk.append(key)
-    dk.sort(key=lambda date: datetime.strptime(date, "%d/%m/%y"))
+    dk.sort(key=lambda date: datetime.strptime(date, "%m/%d/%y"))
     for i in dk:
         dval.append(d[i])
     return dk, dval
@@ -284,8 +284,7 @@ def plot(rider_name):
         return
     
     if (d == None or rider_name != rider):
-        messagebox.showinfo(
-            "Loading", "Please Close this and wait for 4-10 seconds")
+        # messagebox.showinfo("Loading", "Please Close this and wait for 4-10 seconds")
         d, e, s = get_attr_per_day(rider_name)
         rider = rider_name
 
@@ -362,9 +361,6 @@ def process_coordinates_data(ents):
         messagebox.showerror("Error", "No path Exists.")
         return 0
 
-    # im = Image.new('RGB', (580,484))
-    # os.remove("coord_speed_plot.png")
-    # im.save("coord_speed_plot" + ".png",format("PNG"))
 
     plt.clf()
 
