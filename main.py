@@ -22,13 +22,33 @@ fields = ('start_Lat', 'start_Long', 'mid_Lat', 'mid_Long',
           'end_Lat', 'end_Long',)
 
 
+class LoadingScreen(Toplevel):
+    progress_bar = None
+
+    def __init__(self, master = None):
+        super().__init__(master = master)
+        self.title("Loading Screen")
+        ws = master.winfo_screenwidth()
+        hs = master.winfo_screenheight()
+        x = (ws/2) - 250
+        y = (hs/2) - 100
+        self.geometry('%dx%d+%d+%d' % (200,200,x,y))    
+        self.progress_bar = ttk.Progressbar(self, orient= HORIZONTAL, length = 100, mode = 'determinate')
+        self.progress_bar.place(relx=0.25, rely=0.45)
+        self.progress_bar['value'] = 0
+    
+    def increment_loading(self, increment):
+        self.progress_bar['value'] = increment
+        self.update_idletasks()
+        if(increment == 100):
+            time.sleep(0.2)
 
 def Process(rider_name):
 
-    global dist_img,speed_img,ele_img,coord_speed_img
+    global dist_img,speed_img,ele_img,coord_speed_img, rider
 
     plot(rider_name)     
-
+    rider = rider_name
     dist_img = PhotoImage(file = r"./dist_plot.png")
     speed_img= PhotoImage(file = r"./speed_plot.png")
     ele_img = PhotoImage(file = r"./ele_plot.png")
@@ -36,33 +56,48 @@ def Process(rider_name):
 
 
 def call_primary_buttons():
-    global data
+    global data, root
 
     def process_data_button(event):
+        load = LoadingScreen(root)
+        load.grab_set()
+        load.increment_loading(20)
         Process(rider_name.get())
+        load.increment_loading(40)
         try:
             Label(top_right, text=rider_name.get() + " Statistics", font=fontStyle1).place(relx=0.20, rely=0.40)
             lb = Listbox(top_right, width=40, height=7)
             lb.place(relx=0.05, rely=0.45)
             p1, p2, p3 = summarise(rider_name.get())
+            load.increment_loading(60)
             lb.insert(1, "Average distance covered per day (in Km): {}".format(p1))
             lb.insert(2, "Average elevation gain per day (in feet): {}".format(p2))
             lb.insert(3, "Max Speed reached (in Km/hr): {}".format(p3))
         except:
             print("{} has no data".format(rider_name.get()))
-        
+        load.increment_loading(100)
+        load.grab_release()
+        load.destroy()
     
     def compare_data_button(event):
+        load = LoadingScreen(root)
+        load.grab_set()
+        load.increment_loading(25)
         try:
             Label(top_right, text=other_rider_name.get() + " Statistics", font=fontStyle1).place(relx=0.65, rely=0.40)
             lb = Listbox(top_right, width=40, height=7)
             lb.place(relx=0.50, rely=0.45)
+            load.increment_loading(50)
             p1, p2, p3 = summarise(other_rider_name.get())
             lb.insert(1, "Average distance covered per day (in Km): {}".format(p1))
             lb.insert(2, "Average elevation gain per day (in feet): {}".format(p2))
             lb.insert(3, "Max Speed reached (in Km/hr): {}".format(p3))
+            load.increment_loading(75)
         except:
             print("{} has no data".format(other_rider_name.get()))
+        load.increment_loading(100)
+        load.grab_release()
+        load.destroy()
 
     Label(top_left, text="Select the rider: ", font=fontStyle1).place(relx=0.27, rely=0.91)
     rider_name = tk.StringVar()
@@ -100,16 +135,31 @@ def pick_folder(*args):
 
 
 def dist_plot_window():
-    global dist_img
+    global dist_img, rider
+    if rider == "":
+        messagebox.showerror("Error", "Select a Rider first.")
+        return 
     l.configure(image=dist_img, width=735, height=485, bg='white')
+
 def speed_plot_window():
-    global speed_img
+    global speed_img, rider
+    if rider == "":
+        messagebox.showerror("Error", "Select a Rider first.")
+        return 
     l.configure(image=speed_img, width=735, height=485, bg='white')
+
 def ele_plot_window():
-    global ele_img
+    global ele_img, rider
+    if rider == "":
+        messagebox.showerror("Error", "Select a Rider first.")
+        return 
     l.configure(image=ele_img, width=735, height=485, bg='white')
+
 def coord_speed_plot_window():
-    global coord_speed_img
+    global coord_speed_img, rider
+    if rider == "":
+        messagebox.showerror("Error", "Select a Rider first.")
+        return 
     l.configure(image=coord_speed_img, width=735, height=485, bg='white')
 
 
@@ -272,6 +322,4 @@ speed_btn = tk.Button(top_right, text="Speed vs Date", command=speed_plot_window
 speed_btn.place(relx=0.4,rely=0.12)
 elevation_btn = tk.Button(top_right, text="Elevation vs Date", command=ele_plot_window)
 elevation_btn.place(relx=0.7,rely=0.12)
-
-
-root.mainloop()
+mainloop()
